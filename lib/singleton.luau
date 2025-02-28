@@ -21,6 +21,10 @@ type ServiceConfig = {
 
 type ControllerConfig = ServiceConfig & { onRender: ((dt: number) -> unknown)? }
 
+--> Constants
+local Objects = {}
+local FromObject = {}
+
 --> Module
 local Singleton = {}
 
@@ -29,20 +33,75 @@ local Singleton = {}
 
 	@param config - The singleton's config.
 ]]
-function Singleton.create(t: ServiceConfig): Singleton
-	local singleton = t
-	
-	for prop, value in singleton do
+function Singleton.create(t: ServiceConfig): Singleton	
+	assert(typeof(t) == "table", `[{PREFIX}:Singleton]: Can't create a singleton without a table.`)
+	assert(typeof(t.name) == "string", `[{PREFIX}:Singleton]: Can't create a singleton without a name.`)
+	assert(#t.name > 0, `[{PREFIX}:Singleton]: Can't create a singleton with an empty name.`)
+	assert(not Objects[t.name], `[{PREFIX}:Singleton]: Singleton with name {t.name} already exists.`)
+
+	for prop, value in t do
 		local isLifecycle = string.find(prop, "on") ~= nil
 		local isInitial = prop == "onInit" or prop == "onStart"
 		local isFn = typeof(value) == "function"
 		
 		if isLifecycle and not isInitial and isFn then
-			Modding.addListener(singleton, prop)
+			Modding.addListener(t, prop)
 		end
 	end
+
+	Objects[t.name] = t
+	FromObject[t] = t.name
 	
-	return singleton
+	return t
+end
+
+--[[
+	Returns a singleton by its name.
+
+	@param key - The singleton's name.
+]]
+Singleton.get = function(key: string): Singleton
+	local initialized = Objects[key]
+	if initialized then
+		return initialized
+	end
+
+	local singleton = Modding.getSingleton(key)
+	if not singleton then
+		error(
+			`[{PREFIX}:Singleton]: Singleton with name {key} doesn't exist.`
+		)
+	end
+
+	local initializedSingleton = Singleton.create(singleton)
+
+	return initializedSingleton
+end
+
+--[[
+	Returns a service by its name.
+
+	@param key - The service's name.
+]]
+Singleton.getService = function(key: string): Singleton
+	if not IS_SERVER then
+		error(`[{PREFIX}:Singleton]: Can't get a service on the client.`)
+	end
+	
+	return Singleton.get(key)
+end
+
+--[[
+	Returns a controller by its name.
+
+	@param key - The controller's name.
+]]
+Singleton.getController = function(key: string): Singleton
+	if IS_SERVER then
+		error(`[{PREFIX}:Singleton]: Can't get a controller on the server.`)
+	end
+	
+	return Singleton.get(key)
 end
 
 --[[

@@ -129,7 +129,7 @@ function Interactive.init(): nil
 		
 		logVerbose("onInit " .. id)
 		
-		table.insert(promises, Promise.try(dependency.onInit, dependency))
+		table.insert(promises, Promise.try(dependency.onInit, dependency, Interactive))
 	end
 	
 	--> Waits for all onInit methods to be executed.
@@ -140,7 +140,7 @@ function Interactive.init(): nil
 	--> The rendering events
 	do
 		RunService.Heartbeat:Connect(function(dt)
-			for id, dependency in ticks do
+			for dependency, id in ticks do
 				reuseThread(
 					profileYielding(function() dependency:onTick(dt) end, id)
 				)
@@ -157,7 +157,7 @@ function Interactive.init(): nil
 		
 		if not IS_SERVER then
 			RunService.RenderStepped:Connect(function(dt)
-				for id, dependency in render do
+				for dependency, id in render do
 					reuseThread(
 						profileYielding(function() dependency:onRender(dt) end, id)
 					)
@@ -188,6 +188,8 @@ end
 	@param path - Either a string or an instance.
 ]]
 function Interactive.addPath(path: string | Instance): nil
+	assert(not hasStarted, `[{PREFIX}:Interactive]: Can't add a path after the initialization.`)
+
 	local preloadPaths
 	local currentPath
 
@@ -284,5 +286,19 @@ Interactive.createService = Singleton.createService
 	@param config - The controller config.
 ]]
 Interactive.createController = Singleton.createController
+
+--[[
+	Returns a service by its name.
+	
+	@param key - The service's name.
+]]
+Interactive.getService = Singleton.getService
+
+--[[
+	Returns a controller by its name.
+	
+	@param key - The controller's name.
+]]
+Interactive.getController = Singleton.getController
 
 return Interactive

@@ -24,8 +24,8 @@ local Modding = {}
 function Modding.registerSingleton(ctor: any, module: ModuleScript?): nil
 	assert(typeof(ctor) == "table", `[{PREFIX}:Modding]: Can't register a dependency which doesn't return a table. {module and "Error on" .. module:GetFullName()}`)
 	
-	local id = ctor.name or (module and module.Name)
-	assert(id ~= nil, `[{PREFIX}:Modding]: Id seems to be invalid. {module and "Script: " .. module:GetFullName()}`)
+	local id = ctor.name
+	assert(id ~= nil, `[{PREFIX}:Modding]: Id seems to be invalid or nullish. {module and "Script: " .. module:GetFullName()}`)
 	
 	--> Modifies the load order if there isn't any.
 	ctor.loadOrder = ctor.loadOrder or math.huge
@@ -42,6 +42,24 @@ end
 ]]
 function Modding.getSingletons(): typeof(Singletons)
 	return Singletons
+end
+
+--[[
+	Returns a singleton by its id.
+	
+	@param id - The id of the singleton.
+	@returns - The singleton.
+]]
+function Modding.getSingleton(id: string)
+	local singleton
+	for _, s in Singletons do
+		if s.name == id then
+			singleton = s
+			break
+		end
+	end
+
+	return singleton
 end
 
 --[[

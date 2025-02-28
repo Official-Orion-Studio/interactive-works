@@ -1,0 +1,28 @@
+{
+    "name": "interactiveworks",
+    "tree": {
+        "$className": "DataModel",
+        "ReplicatedStorage": {
+            "$className": "ReplicatedStorage",
+            "lib": {
+                "$path": "lib"
+            },
+            "$path": "Packages"
+        },
+        "ServerScriptService": {
+            "$className": "ServerScriptService",
+            "server": {
+                "$path": "test/server"
+            }
+        },
+        "StarterPlayer": {
+            "$className": "StarterPlayer",
+            "StarterPlayerScripts": {
+                "$className": "StarterPlayerScripts",
+                "client": {
+                    "$path": "test/client"
+                }
+            }
+        }
+    }
+}
