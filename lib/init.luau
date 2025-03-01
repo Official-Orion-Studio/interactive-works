@@ -24,4 +24,4 @@ local InteractiveWork = interactive
 InteractiveWork.modding = modding
 InteractiveWork.util = util
 
-return InteractiveWork
+return InteractiveWork :: InteractiveWorks
