@@ -36,12 +36,16 @@ do
 	service.onStart = onStart
 	
 	local function playerAdd(self, player)
+		print(self.addedSignals)
+
 		util.initLifecycle(self.addedSignals, "onPlayerAdded", player)
 	end
 
 	service.playerAdd = playerAdd
 	
 	local function playerRemove(self, player)
+		print(self.removedSignals)
+
 		util.initLifecycle(self.removedSignals, "onPlayerRemoved", player)
 	end
 

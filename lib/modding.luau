@@ -70,7 +70,11 @@ function Modding.addListener(ctor: any, lifecycleId: string): nil
 	
 	local lifecycleListener = ListenerAddedEvents[lifecycleId]
 	if not lifecycleListener then
-		LifecycleEvents[lifecycleId] = ctor
+		if not LifecycleEvents[lifecycleId] then
+			LifecycleEvents[lifecycleId] = {}
+		end
+
+		table.insert(LifecycleEvents[lifecycleId], ctor)
 		
 		return nil
 	end
@@ -97,9 +101,11 @@ function Modding.onListenerAdded(fn: (any) -> any, id: string): RBXScriptSignal
 	
 	--> For already existing listeners.
 	if LifecycleEvents[id] then
-		task.spawn(fn, LifecycleEvents[id], id)
+		for _, listener in LifecycleEvents[id] do
+			task.spawn(fn, listener, id)
+		end
 	end
-	
+
 	return listenerAddedEvent:connect(fn)
 end
 

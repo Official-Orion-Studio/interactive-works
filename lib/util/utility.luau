@@ -2,6 +2,7 @@
 local RunService = game:GetService("RunService")
 
 --> Dependencies
+local Promise = require(script.Parent.Parent.Parent.Promise)
 local Modding = require(script.Parent.Parent.modding)
 
 --> Constants
@@ -18,7 +19,12 @@ local InteractiveUtil = {}
 	@param lifecycle - The lifecycle to listen for.
 ]]
 function InteractiveUtil.setupLifecycle(t: { any }, lifecycle: string): nil
-	assert(lifecycle ~= "" and lifecycle, `[{PREFIX}:InteractiveUtil]: The lifecycle identifier can't be nullish.`)
+	assert(
+		lifecycle and
+		lifecycle ~= "" and 
+		#lifecycle > 0, 
+		`[{PREFIX}:InteractiveUtil]: The lifecycle identifier can't be nullish.`
+	)
 	
 	Modding.onListenerAdded(
 		function(object)
@@ -49,9 +55,21 @@ end
 	@param ... - The arguments to pass to the function.
 ]]
 function InteractiveUtil.initLifecycle<U...>(t: { any }, lifecycle: string, ...: U...): nil
+	local promises = {}
+	local args = { ... }
+
 	for _, object in t do
-		object.event[lifecycle](object.event, ...)
+		table.insert(
+			promises,
+			Promise.defer(function(resolve)
+				resolve(
+					object.event[lifecycle](object.event, table.unpack(args))
+				)
+			end)
+		)
 	end
+
+	Promise.all(promises)
 
 	return nil
 end

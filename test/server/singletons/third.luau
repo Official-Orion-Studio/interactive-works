@@ -3,7 +3,7 @@ local framework = require(game:GetService("ReplicatedStorage").lib)
 local service
 do
 	service = {
-		name = "secondService",
+		name = "thirdService",
 	}
 
 	local function onInit(self, servicesBag)
@@ -13,7 +13,7 @@ do
 	service.onInit = onInit
 
 	local function onPlayerAdded(self, player)
-		print(`{player} is being added to the server 2!`)
+		print(`{player} is being added to the server 3!`)
 	
 		self.playerService:doSomething()
 	end
