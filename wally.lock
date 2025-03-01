@@ -8,6 +8,11 @@ version = "4.0.0"
 dependencies = []
 
 [[package]]
+name = "siriuslatte/bindables"
+version = "1.0.1"
+dependencies = []
+
+[[package]]
 name = "siriuslatte/interactiveworks"
-version = "0.2.2"
-dependencies = [["Promise", "evaera/promise@4.0.0"]]
+version = "0.2.4"
+dependencies = [["Bindables", "siriuslatte/bindables@1.0.1"], ["Promise", "evaera/promise@4.0.0"]]

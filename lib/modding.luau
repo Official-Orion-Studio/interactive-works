@@ -2,7 +2,7 @@
 local RunService = game:GetService("RunService")
 
 --> Dependencies
-local Bindables = require(script.Parent.util.bindable)
+local Bindables = require(script.Parent.Parent.Bindables)
 
 --> Constants
 local Singletons = {}

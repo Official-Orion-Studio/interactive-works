@@ -2,7 +2,7 @@
 name = "siriuslatte/interactiveworks"
 description = "In-house framework used among Orion Studios games."
 license = "MIT"
-version = "0.2.4"
+version = "0.2.5"
 authors = ["Ademir Sanchez <barajasademirts@gmail.com>"]
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
@@ -12,3 +12,4 @@ include = ["lib", "lib/*", "default.project.json", "wally.toml", "LICENSE"]
 
 [dependencies]
 Promise = "evaera/promise@4.0.0"
+Bindables = "siriuslatte/bindables@1.0.1"
