@@ -22,7 +22,7 @@ local Modding = {}
 	@param ctor - The constructed object
 	@param module? - An optional module from where the source is coming from.
 ]]
-function Modding.registerSingleton(ctor: Types.Singleton, module: ModuleScript?): nil
+function Modding.registerSingleton(ctor: Types.Singleton, module: ModuleScript?): nil	
 	assert(typeof(ctor) == "table", `[{PREFIX}:Modding]: Can't register a dependency which doesn't return a table. {module and "Error on" .. module:GetFullName()}`)
 	
 	local id = ctor.name
@@ -44,7 +44,7 @@ end
 	@param module - The module to preload.
 	@returns - The constructed object.
 ]]
-function Modding.preload(module: ModuleScript): Types.Singleton
+function Modding.preload(module: ModuleScript): Types.Singleton | nil
 	assert(module:IsA("ModuleScript"), `[{PREFIX}:Modding]: Can't preload a non-ModuleScript object.`)
 
 	local start = os.clock()
@@ -58,6 +58,11 @@ function Modding.preload(module: ModuleScript): Types.Singleton
 		error(
 			module:GetFullName() .. (" failed to preload (" .. (tostring(endTime) .. "ms): " .. tostring(value)))
 		)
+	end
+
+	-- If it isn't a table, we can't register it.
+	if typeof(value) ~= "table" then
+		return nil
 	end
 	
 	if not value.constructor then

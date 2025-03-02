@@ -177,7 +177,12 @@ function Interactive.addPath(path: string | Instance): nil
 
 	for _, instance in currentPath:GetDescendants() do
 		if instance:IsA("ModuleScript") then
-			Modding.registerSingleton(Modding.preload(instance), instance)
+			local preloaded = Modding.preload(instance)
+			if not preloaded then
+				continue
+			end
+
+			Modding.registerSingleton(preloaded, instance)
 		end
 	end
 
