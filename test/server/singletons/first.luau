@@ -1,7 +1,7 @@
 local Players = game:GetService("Players")
 
 local framework = require(game:GetService("ReplicatedStorage").lib)
-local util = framework.Util
+local util = framework.util
 
 local service
 do

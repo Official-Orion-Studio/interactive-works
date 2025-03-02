@@ -1,10 +1,11 @@
---> Services
+-- Services
 local RunService = game:GetService("RunService")
 
---> Dependencies
+-- Dependencies
 local Bindables = require(script.Parent.Parent.Bindables)
+local Types = require(script.Parent.util.types)
 
---> Constants
+-- Constants
 local Singletons = {}
 local ListenerAddedEvents = {}
 local LifecycleEvents = {}
@@ -12,7 +13,7 @@ local LifecycleEvents = {}
 local IS_SERVER = RunService:IsServer()
 local PREFIX = IS_SERVER and "Server" or "Client"
 
---> Module
+-- Module
 local Modding = {}
 
 --[[
@@ -21,18 +22,51 @@ local Modding = {}
 	@param ctor - The constructed object
 	@param module? - An optional module from where the source is coming from.
 ]]
-function Modding.registerSingleton(ctor: any, module: ModuleScript?): nil
+function Modding.registerSingleton(ctor: Types.Singleton, module: ModuleScript?): nil
 	assert(typeof(ctor) == "table", `[{PREFIX}:Modding]: Can't register a dependency which doesn't return a table. {module and "Error on" .. module:GetFullName()}`)
 	
 	local id = ctor.name
-	assert(id ~= nil, `[{PREFIX}:Modding]: Id seems to be invalid or nullish. {module and "Script: " .. module:GetFullName()}`)
+	if not id then
+		return -- This might not be a service, and if it wasn't we can't register it without a name
+	end
 	
-	--> Modifies the load order if there isn't any.
+	-- Modifies the load order if there isn't any.
 	ctor.loadOrder = ctor.loadOrder or math.huge
 	
 	table.insert(Singletons, ctor)
 	
 	return nil
+end
+
+--[[
+	Preloads a module and returns the constructed object.
+
+	@param module - The module to preload.
+	@returns - The constructed object.
+]]
+function Modding.preload(module: ModuleScript): Types.Singleton
+	assert(module:IsA("ModuleScript"), `[{PREFIX}:Modding]: Can't preload a non-ModuleScript object.`)
+
+	local start = os.clock()
+	local success, value = pcall(function()
+		return require(module)
+	end)
+
+	local endTime = math.floor((os.clock() - start) * 1000)
+
+	if not success then
+		error(
+			module:GetFullName() .. (" failed to preload (" .. (tostring(endTime) .. "ms): " .. tostring(value)))
+		)
+	end
+	
+	if not value.constructor then
+		return value
+	end
+	
+	value:constructor() --> Firstly construct the service/controller
+	
+	return value
 end
 
 --[[

@@ -25,6 +25,18 @@ do
 	end
 
 	service.onPlayerRemoved = onPlayerRemoved
+
+	local function onTick(self, dt)
+		print(`[SecondService]: Tick!`)
+	end
+
+	service.onTick = onTick
+
+	local function printSomething(self, ...)
+		print("[SecondService]: ", ...)
+	end
+
+	service.printSomething = printSomething
 end
 
 return framework.createService(service)

@@ -1,31 +1,25 @@
---> Services
+-- Services
 local RunService = game:GetService("RunService")
 
---> Dependencies
+-- Dependencies
 local Modding = require(script.Parent.modding)
+local Reflect = require(script.Parent.reflect)
+local Types = require(script.Parent.util.types)
 
---> Constants
+local Promise = require(script.Parent.Parent.Promise)
+
+local reuseThread = require(script.Parent.util.reuseThread)
+local profileYielding = require(script.Parent.util.profileYielding)
+
+-- Constants
 local IS_SERVER = RunService:IsServer()
 local PREFIX = IS_SERVER and "Server" or "Client"
 
---> Types
-type ServiceConfig = {
-	name: string,
-	loadOrder: number?,
-	
-	onInit: (() -> unknown?)?,
-	onStart: (() -> unknown?)?,
-	onTick: ((dt: number) -> unknown?)?,
-	onPhysics: ((dt: number) -> unknown?)?,
-}
-
-type ControllerConfig = ServiceConfig & { onRender: ((dt: number) -> unknown)? }
-
---> Constants
+-- Constants
 local Objects = {}
 local FromObject = {}
 
---> Module
+-- Module
 local Singleton = {}
 
 --[[
@@ -33,7 +27,7 @@ local Singleton = {}
 
 	@param config - The singleton's config.
 ]]
-function Singleton.create(t: ServiceConfig): Singleton	
+function Singleton.create(t: Types.SingletonConfig): Types.Singleton
 	assert(typeof(t) == "table", `[{PREFIX}:Singleton]: Can't create a singleton without a table.`)
 	assert(typeof(t.name) == "string", `[{PREFIX}:Singleton]: Can't create a singleton without a name.`)
 	assert(#t.name > 0, `[{PREFIX}:Singleton]: Can't create a singleton with an empty name.`)
@@ -52,7 +46,45 @@ function Singleton.create(t: ServiceConfig): Singleton
 	Objects[t.name] = t
 	FromObject[t] = t.name
 	
-	return t
+	return t :: Types.Singleton
+end
+
+--[[
+	Resolves a singleton by its constructor.
+
+	@param ctor - The constructor.
+	@returns - A resolved singleton.
+]]
+function Singleton.resolveSingleton(ctor: Types.Singleton): Types.Singleton
+	assert(typeof(ctor) == "table", `[{PREFIX}:Modding]: Can't resolve a dependency which doesn't return a table.`)
+
+	-- It already exists
+	if Reflect.getMetadata(ctor, "_initialized") then
+		return ctor
+	end
+
+	-- Attaches the _initialized tag
+	Reflect.attachMetadata(ctor, { _initialized = true })
+
+	local id = ctor.name
+
+	-- Firstly initializes the singleton
+	if ctor.onInit then
+		debug.setmemorycategory(id)
+			
+		Promise.try(ctor.onInit, ctor, Singleton):expect()
+	
+		debug.resetmemorycategory()
+	end
+
+	-- Secondly, starts the singleton
+	if ctor.onStart then
+		reuseThread(
+			profileYielding(function() ctor.onStart(ctor) end, id)
+		)
+	end
+
+	return ctor
 end
 
 --[[
@@ -60,13 +92,25 @@ end
 
 	@param key - The singleton's name.
 ]]
-Singleton.get = function(key: string): Singleton
+Singleton.get = function(key: string | Instance): Types.Singleton
+	if typeof(key) == "Instance" then
+		assert(key:IsA("ModuleScript"), `[{PREFIX}:Singleton]: Can't get a singleton from a non-ModuleScript instance.`)
+		
+		-- Resolves the dependency
+		key = Singleton.resolveSingleton(Modding.preload(key)) :: any
+
+		-- This is true, as when resolved it will be registered on the table
+		key = FromObject[key]
+
+		print(key)
+	end
+
 	local initialized = Objects[key]
 	if initialized then
 		return initialized
 	end
 
-	local singleton = Modding.getSingleton(key)
+	local singleton = Modding.getSingleton(key :: string)
 	if not singleton then
 		error(
 			`[{PREFIX}:Singleton]: Singleton with name {key} doesn't exist.`
@@ -83,7 +127,7 @@ end
 
 	@param key - The service's name.
 ]]
-Singleton.getService = function(key: string): Singleton
+Singleton.getService = function(key: string | Instance): Types.Singleton
 	if not IS_SERVER then
 		error(`[{PREFIX}:Singleton]: Can't get a service on the client.`)
 	end
@@ -96,7 +140,7 @@ end
 
 	@param key - The controller's name.
 ]]
-Singleton.getController = function(key: string): Singleton
+Singleton.getController = function(key: string): Types.Singleton
 	if IS_SERVER then
 		error(`[{PREFIX}:Singleton]: Can't get a controller on the server.`)
 	end
@@ -109,7 +153,7 @@ end
 	
 	@param config - The controller config.
 ]]
-Singleton.createController = function(t: ControllerConfig): Singleton
+Singleton.createController = function(t: Types.SingletonConfig): Types.Singleton
 	assert(not IS_SERVER, `[{PREFIX}:Singleton]: Can't create a controller on the server.`)
 	
 	return Singleton.create(t)
@@ -120,7 +164,7 @@ end
 	
 	@param config - The service config.
 ]]
-Singleton.createService = function(t: ServiceConfig): Singleton
+Singleton.createService = function(t: Types.SingletonConfig): Types.Singleton
 	assert(IS_SERVER, `[{PREFIX}:Singleton]: Can't create a service in the client.`)
 	
 	if t.onRender then
@@ -131,8 +175,5 @@ Singleton.createService = function(t: ServiceConfig): Singleton
 	
 	return Singleton.create(t)
 end
-
---> Types exports
-export type Singleton = typeof(Singleton.create({}))
 
 return Singleton

@@ -1,79 +1,29 @@
---> Services
+-- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
---> Dependencies
+-- Dependencies
 local Modding  = require(script.Parent.modding)
 local Singleton = require(script.Parent.singleton)
+local Reflect = require(script.Parent.reflect)
 
 local Promise = require(script.Parent.Parent.Promise)
 
---> Constants
-local IS_STUDIO = RunService:IsStudio()
+local logVerbose = require(script.Parent.util.logVerbose)
+local reuseThread = require(script.Parent.util.reuseThread)
+local profileYielding = require(script.Parent.util.profileYielding)
+
+-- Constants
 local IS_SERVER = RunService:IsServer()
 local PREFIX = IS_SERVER and "Server" or "Client"
 
---> Variables
+-- Variables
 local hasStarted = false
-local inactiveThread
 
---> Module
+-- Module
 local Interactive = {
 	logLevel = "top-level"
 }
-
---> Utility functions
-local function logVerbose(...): nil
-	if Interactive.logLevel == "verbose" then
-		print(`[{PREFIX}:Interactive (verbose)]`, ...)
-	end
-
-	return nil
-end
-
-local function reusableThread(func)
-	local thread = coroutine.running()
-	while true do
-		if inactiveThread == thread then
-			inactiveThread = nil
-		end
-		
-		func()
-
-		if inactiveThread ~= nil then
-			break
-		end
-		
-		inactiveThread = thread
-		func = coroutine.yield()
-	end
-end
-
-local function profileYielding(func, identifier)
-	if IS_STUDIO then
-		return function()
-			--> We profile it if we are on Studio.
-			debug.profilebegin(identifier)
-			debug.setmemorycategory(identifier)
-			
-			func()
-			
-			debug.resetmemorycategory()
-		end
-	else
-		return func
-	end
-end
-
-local function reuseThread(func)
-	if inactiveThread then
-		task.spawn(inactiveThread, func)
-	else
-		task.spawn(reusableThread, func)
-	end
-end
-
---> Methods
 
 --[[
 	Initializes all the processes, modules and paths that were added
@@ -87,7 +37,7 @@ function Interactive.init(): nil
 		error("Interactive.init() can't be called twice.")
 	end
 	
-	logVerbose("Interactive.init() has been started.")
+	logVerbose(Interactive.logLevel, "Interactive.init() has been started.")
 	
 	local dependencies = Modding.getSingletons()
 	
@@ -96,13 +46,33 @@ function Interactive.init(): nil
 		return a.loadOrder < b.loadOrder
 	end)
 	
-	local ticks = {}
-	local render = {}
-	local physics = {}
+	do
+		Modding.onListenerAdded(function(ctor, id) 
+			RunService.Heartbeat:Connect(function(dt)
+				reuseThread(
+					profileYielding(function() ctor:onTick(dt) end, id)
+				)
+			end)
+		end, "onTick")
 	
-	Modding.onListenerAdded(function(ctor, id) ticks[ctor] = id end, "onTick")
-	Modding.onListenerAdded(function(ctor, id) render[ctor] = id end, "onRender")
-	Modding.onListenerAdded(function(ctor, id) physics[ctor] = id end, "onPhysics")
+		Modding.onListenerAdded(function(ctor, id)
+			RunService.Stepped:Connect(function(_, dt)
+				reuseThread(
+					profileYielding(function() ctor:onPhysics(dt) end, id)
+				)
+			end)
+		end, "onPhysics")
+	
+		if not IS_SERVER then
+			Modding.onListenerAdded(function(ctor, id) 
+				RunService.RenderStepped:Connect(function(dt)
+					reuseThread(
+						profileYielding(function() ctor:onRender(dt) end, id)
+					)
+				end)
+			end, "onRender")
+		end
+	end
 	
 	local init = {}
 	local start = {}
@@ -119,60 +89,37 @@ function Interactive.init(): nil
 		end
 	end
 	
-	--> onInit method, at this point all singletons should be equally solved
+	-- onInit method, at this point all singletons should be equally solved
 	local promises = {}
 	for _, bind in init do
 		local dependency = bind[1]
 		local id = bind[2]
+
+		-- Has been already resolved by another script
+		if Reflect.getMetadata(dependency, "_initialized") then
+			continue
+		end
 		
 		debug.setmemorycategory(id)
+		logVerbose(Interactive.logLevel, "onInit " .. id)
 		
-		logVerbose("onInit " .. id)
-		
+		Reflect.attachMetadata(dependency, { _initialized = true })
+
 		table.insert(promises, Promise.try(dependency.onInit, dependency, Interactive))
 	end
 	
-	--> Waits for all onInit methods to be executed.
+	-- Waits for all onInit methods to be executed.
 	Promise.all(promises):expect()
 	
 	debug.resetmemorycategory()
 	
-	--> The rendering events
-	do
-		RunService.Heartbeat:Connect(function(dt)
-			for dependency, id in ticks do
-				reuseThread(
-					profileYielding(function() dependency:onTick(dt) end, id)
-				)
-			end
-		end)
-		
-		RunService.Stepped:Connect(function(_, dt)
-			for dependency, id in physics do
-				reuseThread(
-					profileYielding(function() dependency:onPhysics(dt) end, id)
-				)
-			end
-		end)
-		
-		if not IS_SERVER then
-			RunService.RenderStepped:Connect(function(dt)
-				for dependency, id in render do
-					reuseThread(
-						profileYielding(function() dependency:onRender(dt) end, id)
-					)
-				end
-			end)
-		end
-	end
-	
-	--> onStart method, at this point all singletons should already exist and
-	--> interdepending dependencies should all be available
+	-- onStart method, at this point all singletons should already exist and
+	-- interdepending dependencies should all be available
 	for _, bind in start do
 		local dependency = bind[1]
 		local id = bind[2]
 		
-		logVerbose("onStart " .. id)
+		logVerbose(Interactive.logLevel, "onStart " .. id)
 		
 		reuseThread(
 			profileYielding(function() dependency:onStart() end, id)
@@ -228,32 +175,9 @@ function Interactive.addPath(path: string | Instance): nil
 		currentPath = path
 	end
 
-	local preload = function(module: ModuleScript)
-		local start = os.clock()
-		local success, value = pcall(function()
-			return require(module)
-		end)
-
-		local endTime = math.floor((os.clock() - start) * 1000)
-
-		if not success then
-			error(
-				module:GetFullName() .. (" failed to preload (" .. (tostring(endTime) .. "ms): " .. tostring(value)))
-			)
-		end
-		
-		if not value.constructor then
-			return value
-		end
-		
-		value:constructor() --> Firstly construct the service/controller
-		
-		return value
-	end
-
 	for _, instance in currentPath:GetDescendants() do
 		if instance:IsA("ModuleScript") then
-			Modding.registerSingleton(preload(instance), instance)
+			Modding.registerSingleton(Modding.preload(instance), instance)
 		end
 	end
 
