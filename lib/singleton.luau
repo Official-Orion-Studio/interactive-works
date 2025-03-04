@@ -84,6 +84,12 @@ function Singleton.resolveSingleton(ctor: Types.Singleton): Types.Singleton
 		)
 	end
 
+	-- Make sure to register it
+	if not Objects[ctor.name] then
+		Objects[ctor.name] = ctor
+		FromObject[ctor] = ctor.name
+	end
+
 	return ctor
 end
 
@@ -97,12 +103,17 @@ Singleton.get = function(key: string | Instance): Types.Singleton
 		assert(key:IsA("ModuleScript"), `[{PREFIX}:Singleton]: Can't get a singleton from a non-ModuleScript instance.`)
 		
 		-- Resolves the dependency
-		key = Singleton.resolveSingleton(Modding.preload(key)) :: any
+		local preloaded = Modding.preload(key)
+		if not preloaded then
+			error(
+				`[{PREFIX}:Singleton]: Couldn't preload the singleton from {key:GetFullName()} since its structure is nothing similar to a singleton.`
+			)
+		end
+
+		key = Singleton.resolveSingleton(preloaded) :: any
 
 		-- This is true, as when resolved it will be registered on the table
 		key = FromObject[key]
-
-		print(key)
 	end
 
 	local initialized = Objects[key]

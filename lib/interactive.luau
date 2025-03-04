@@ -5,7 +5,6 @@ local RunService = game:GetService("RunService")
 -- Dependencies
 local Modding  = require(script.Parent.modding)
 local Singleton = require(script.Parent.singleton)
-local Reflect = require(script.Parent.reflect)
 
 local Promise = require(script.Parent.Parent.Promise)
 
@@ -37,42 +36,22 @@ function Interactive.init(): nil
 		error("Interactive.init() can't be called twice.")
 	end
 	
-	logVerbose(Interactive.logLevel, "Interactive.init() has been started.")
+	logVerbose("Interactive.init() has been started.")
 	
 	local dependencies = Modding.getSingletons()
 	
-	--> Sorting for order
+	-- Sorting for order
 	table.sort(dependencies, function(a, b)
 		return a.loadOrder < b.loadOrder
 	end)
 	
-	do
-		Modding.onListenerAdded(function(ctor, id) 
-			RunService.Heartbeat:Connect(function(dt)
-				reuseThread(
-					profileYielding(function() ctor:onTick(dt) end, id)
-				)
-			end)
-		end, "onTick")
+	local ticks = {}
+	local render = {}
+	local physics = {}
 	
-		Modding.onListenerAdded(function(ctor, id)
-			RunService.Stepped:Connect(function(_, dt)
-				reuseThread(
-					profileYielding(function() ctor:onPhysics(dt) end, id)
-				)
-			end)
-		end, "onPhysics")
-	
-		if not IS_SERVER then
-			Modding.onListenerAdded(function(ctor, id) 
-				RunService.RenderStepped:Connect(function(dt)
-					reuseThread(
-						profileYielding(function() ctor:onRender(dt) end, id)
-					)
-				end)
-			end, "onRender")
-		end
-	end
+	Modding.onListenerAdded(function(ctor, id) ticks[ctor] = id end, "onTick")
+	Modding.onListenerAdded(function(ctor, id) render[ctor] = id end, "onRender")
+	Modding.onListenerAdded(function(ctor, id) physics[ctor] = id end, "onPhysics")
 	
 	local init = {}
 	local start = {}
@@ -94,17 +73,11 @@ function Interactive.init(): nil
 	for _, bind in init do
 		local dependency = bind[1]
 		local id = bind[2]
-
-		-- Has been already resolved by another script
-		if Reflect.getMetadata(dependency, "_initialized") then
-			continue
-		end
 		
 		debug.setmemorycategory(id)
-		logVerbose(Interactive.logLevel, "onInit " .. id)
 		
-		Reflect.attachMetadata(dependency, { _initialized = true })
-
+		logVerbose("onInit " .. id)
+		
 		table.insert(promises, Promise.try(dependency.onInit, dependency, Interactive))
 	end
 	
@@ -113,13 +86,40 @@ function Interactive.init(): nil
 	
 	debug.resetmemorycategory()
 	
-	-- onStart method, at this point all singletons should already exist and
-	-- interdepending dependencies should all be available
+	-- The rendering events
+	do
+		RunService.Heartbeat:Connect(function(dt)
+			for dependency, id in ticks do
+				reuseThread(
+					profileYielding(function() dependency:onTick(dt) end, id)
+				)
+			end
+		end)
+		
+		RunService.PreSimulation:Connect(function(dt)
+			for dependency, id in physics do
+				reuseThread(
+					profileYielding(function() dependency:onPhysics(dt) end, id)
+				)
+			end
+		end)
+		
+		if not IS_SERVER then
+			RunService.PreRender:Connect(function(dt)
+				for dependency, id in render do
+					reuseThread(
+						profileYielding(function() dependency:onRender(dt) end, id)
+					)
+				end
+			end)
+		end
+	end
+	
 	for _, bind in start do
 		local dependency = bind[1]
 		local id = bind[2]
 		
-		logVerbose(Interactive.logLevel, "onStart " .. id)
+		logVerbose("onStart " .. id)
 		
 		reuseThread(
 			profileYielding(function() dependency:onStart() end, id)

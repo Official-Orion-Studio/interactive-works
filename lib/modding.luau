@@ -2,6 +2,8 @@
 local RunService = game:GetService("RunService")
 
 -- Dependencies
+local Promise = require(script.Parent.Parent.Promise)
+
 local Bindables = require(script.Parent.Parent.Bindables)
 local Types = require(script.Parent.util.types)
 
@@ -48,9 +50,13 @@ function Modding.preload(module: ModuleScript): Types.Singleton | nil
 	assert(module:IsA("ModuleScript"), `[{PREFIX}:Modding]: Can't preload a non-ModuleScript object.`)
 
 	local start = os.clock()
-	local success, value = pcall(function()
-		return require(module)
+	local success, value = Promise.new(function(resolve)
+		return resolve(require(module))
 	end)
+		:catch(function(err)
+			warn(`[{PREFIX}:Modding]: Error on preloading ${module:GetFullName()}. More information: {err}`)
+		end)
+		:await()
 
 	local endTime = math.floor((os.clock() - start) * 1000)
 

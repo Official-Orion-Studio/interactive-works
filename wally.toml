@@ -2,7 +2,7 @@
 name = "siriuslatte/interactiveworks"
 description = "In-house framework used among Orion Studios games."
 license = "MIT"
-version = "1.0.1-alpha.1"
+version = "1.0.4-alpha.1"
 authors = ["Ademir Sanchez <barajasademirts@gmail.com>"]
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
