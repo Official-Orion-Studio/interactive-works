@@ -110,6 +110,8 @@ Singleton.get = function(key: string | Instance): Types.Singleton
 			)
 		end
 
+		Modding.registerSingleton(preloaded) -- Registers it for later access
+		
 		key = Singleton.resolveSingleton(preloaded) :: any
 
 		-- This is true, as when resolved it will be registered on the table

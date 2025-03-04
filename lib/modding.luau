@@ -100,6 +100,7 @@ function Modding.getSingleton(id: string)
 	for _, s in Singletons do
 		if s.name == id then
 			singleton = s
+			
 			break
 		end
 	end
@@ -124,7 +125,7 @@ function Modding.addListener(ctor: any, lifecycleId: string): nil
 		return nil
 	end
 	
-	return lifecycleListener:Fire(ctor, lifecycleId)
+	return lifecycleListener:fire(ctor, lifecycleId)
 end
 
 --[[
