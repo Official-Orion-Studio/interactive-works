@@ -16,9 +16,9 @@ return function(func, identifier)
 			-- We profile it if we are on Studio.
 			debug.profilebegin(identifier)
 			debug.setmemorycategory(identifier)
-			
+
 			func()
-			
+
 			debug.resetmemorycategory()
 		end
 	else

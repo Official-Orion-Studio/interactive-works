@@ -3,14 +3,16 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 -- Dependencies
-local Modding  = require(script.Parent.modding)
+local Components = require(script.Parent.components)
+local Modding = require(script.Parent.modding)
+local Reflect = require(script.Parent.reflect)
 local Singleton = require(script.Parent.singleton)
 
 local Promise = require(script.Parent.Parent.Promise)
 
 local logVerbose = require(script.Parent.util.logVerbose)
-local reuseThread = require(script.Parent.util.reuseThread)
 local profileYielding = require(script.Parent.util.profileYielding)
+local reuseThread = require(script.Parent.util.reuseThread)
 
 -- Constants
 local IS_SERVER = RunService:IsServer()
@@ -21,7 +23,7 @@ local hasStarted = false
 
 -- Module
 local Interactive = {
-	logLevel = "top-level"
+	logLevel = "top-level",
 }
 
 --[[
@@ -35,97 +37,117 @@ function Interactive.init(): nil
 	if hasStarted then
 		error("Interactive.init() can't be called twice.")
 	end
-	
+
 	logVerbose("Interactive.init() has been started.")
-	
+
 	local dependencies = Modding.getSingletons()
-	
+
 	-- Sorting for order
 	table.sort(dependencies, function(a, b)
-		return a.loadOrder < b.loadOrder
+		local aOrder = Reflect.getAttachedMetadata(a, "s:loadOrder")
+		local bOrder = Reflect.getAttachedMetadata(b, "s:loadOrder")
+
+		return aOrder < bOrder
 	end)
-	
+
 	local ticks = {}
 	local render = {}
 	local physics = {}
-	
-	Modding.onListenerAdded(function(ctor, id) ticks[ctor] = id end, "onTick")
-	Modding.onListenerAdded(function(ctor, id) render[ctor] = id end, "onRender")
-	Modding.onListenerAdded(function(ctor, id) physics[ctor] = id end, "onPhysics")
-	
+
+	Modding.onListenerAdded(function(ctor, id)
+		ticks[ctor] = id
+	end, "onTick")
+
+	Modding.onListenerAdded(function(ctor, id)
+		render[ctor] = id
+	end, "onRender")
+
+	Modding.onListenerAdded(function(ctor, id)
+		physics[ctor] = id
+	end, "onPhysics")
+
 	local init = {}
 	local start = {}
-	
+
 	for index, dependency in dependencies do
+		local identifier = Reflect.getAttachedMetadata(dependency, "identifier")
+		if identifier ~= "@singleton" then
+			warn(
+				`[{PREFIX}:Interactive]: The dependency ${tostring(dependency)} is not a singleton.`
+			)
+
+			continue
+		end
+
 		local obj = { dependency, tostring(dependency) or index }
-		
+
 		if dependency.onInit then
 			table.insert(init, obj)
 		end
-		
+
 		if dependency.onStart then
 			table.insert(start, obj)
 		end
 	end
-	
+
 	-- onInit method, at this point all singletons should be equally solved
 	local promises = {}
 	for _, bind in init do
 		local dependency = bind[1]
 		local id = bind[2]
-		
+
 		debug.setmemorycategory(id)
-		
+
 		logVerbose("onInit " .. id)
-		
+
 		table.insert(promises, Promise.try(dependency.onInit, dependency, Interactive))
 	end
-	
+
 	-- Waits for all onInit methods to be executed.
 	Promise.all(promises):expect()
-	
+
 	debug.resetmemorycategory()
-	
+
 	-- The rendering events
 	do
 		RunService.Heartbeat:Connect(function(dt)
 			for dependency, id in ticks do
-				reuseThread(
-					profileYielding(function() dependency:onTick(dt) end, id)
-				)
+				reuseThread(profileYielding(function()
+					dependency:onTick(dt)
+				end, id))
 			end
 		end)
-		
+
 		RunService.PreSimulation:Connect(function(dt)
 			for dependency, id in physics do
-				reuseThread(
-					profileYielding(function() dependency:onPhysics(dt) end, id)
-				)
+				reuseThread(profileYielding(function()
+					dependency:onPhysics(dt)
+				end, id))
 			end
 		end)
-		
+
 		if not IS_SERVER then
 			RunService.PreRender:Connect(function(dt)
 				for dependency, id in render do
-					reuseThread(
-						profileYielding(function() dependency:onRender(dt) end, id)
-					)
+					reuseThread(profileYielding(function()
+						dependency:onRender(dt)
+					end, id))
 				end
 			end)
 		end
 	end
-	
+
 	for _, bind in start do
 		local dependency = bind[1]
 		local id = bind[2]
-		
+
 		logVerbose("onStart " .. id)
-		
-		reuseThread(
-			profileYielding(function() dependency:onStart() end, id)
-		)
+
+		reuseThread(profileYielding(function()
+			dependency:onStart()
+		end, id))
 	end
-	
+
 	return nil
 end
 
@@ -142,22 +164,20 @@ function Interactive.addPath(path: string | Instance): nil
 
 	if typeof(path) == "string" then
 		preloadPaths = string.split(path, "/")
-		if #preloadPaths <= 0 then return end
+		if #preloadPaths <= 0 then
+			return
+		end
 
 		local service = table.remove(preloadPaths, 1)
 		currentPath = game:GetService(service)
 
 		if service == "StarterPlayer" then
 			if preloadPaths[1] ~= "StarterPlayerScripts" then
-				error(
-					`StarterPlayer only supports StarterPlayerScripts.`
-				)
+				error(`StarterPlayer only supports StarterPlayerScripts.`)
 			end
 
 			if IS_SERVER then
-				error(
-					`The server can not load StarterPlayer content.`
-				)
+				error(`The server can not load StarterPlayer content.`)
 			end
 
 			currentPath = Players.LocalPlayer:WaitForChild("PlayerScripts")
@@ -195,10 +215,13 @@ end
 	@param level - The log level.
 ]]
 function Interactive.setLogLevel(level: "verbose" | "top-level"): nil
-	assert(typeof(level) == "string", `[{PREFIX}:Interactive]: The verbose level can't be any other than a string.`)
-	
+	assert(
+		typeof(level) == "string",
+		`[{PREFIX}:Interactive]: The verbose level can't be any other than a string.`
+	)
+
 	Interactive.logLevel = level
-	
+
 	return nil
 end
 

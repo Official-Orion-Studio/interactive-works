@@ -8,11 +8,16 @@ version = "4.0.0"
 dependencies = []
 
 [[package]]
+name = "howmanysmall/janitor"
+version = "1.17.0"
+dependencies = [["Promise", "evaera/promise@4.0.0"]]
+
+[[package]]
 name = "siriuslatte/bindables"
 version = "1.0.1"
 dependencies = []
 
 [[package]]
 name = "siriuslatte/interactiveworks"
-version = "0.2.4"
-dependencies = [["Bindables", "siriuslatte/bindables@1.0.1"], ["Promise", "evaera/promise@4.0.0"]]
+version = "1.0.6-alpha.1"
+dependencies = [["Bindables", "siriuslatte/bindables@1.0.1"], ["Janitor", "howmanysmall/janitor@1.17.0"], ["Promise", "evaera/promise@4.0.0"]]

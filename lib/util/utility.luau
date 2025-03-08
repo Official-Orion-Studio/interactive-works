@@ -1,15 +1,15 @@
---> Services
+-- Services
 local RunService = game:GetService("RunService")
 
---> Dependencies
-local Promise = require(script.Parent.Parent.Parent.Promise)
+-- Dependencies
 local Modding = require(script.Parent.Parent.modding)
+local Promise = require(script.Parent.Parent.Parent.Promise)
 
---> Constants
+-- Constants
 local IS_SERVER = RunService:IsServer()
 local PREFIX = IS_SERVER and "Server" or "Client"
 
---> Module
+-- Module
 local InteractiveUtil = {}
 
 --[[
@@ -20,30 +20,25 @@ local InteractiveUtil = {}
 ]]
 function InteractiveUtil.setupLifecycle(t: { any }, lifecycle: string): nil
 	assert(
-		lifecycle and
-		lifecycle ~= "" and 
-		#lifecycle > 0, 
+		lifecycle and lifecycle ~= "" and #lifecycle > 0,
 		`[{PREFIX}:InteractiveUtil]: The lifecycle identifier can't be nullish.`
 	)
-	
-	Modding.onListenerAdded(
-		function(object)
-			local _object = {}
-			local id = object.name or 1
-			
-			_object.id = id
-			_object.event = object
-			_object.loadOrder = object.loadOrder
-			
-			table.insert(t, _object)
-		end,
-		lifecycle
-	)
-	
+
+	Modding.onListenerAdded(function(object)
+		local _object = {}
+		local id = object.name or 1
+
+		_object.id = id
+		_object.event = object
+		_object.loadOrder = object.loadOrder or math.huge
+
+		table.insert(t, _object)
+	end, lifecycle)
+
 	table.sort(t, function(a, b)
 		return a.loadOrder > b.loadOrder
 	end)
-	
+
 	return nil
 end
 
@@ -62,9 +57,7 @@ function InteractiveUtil.initLifecycle<U...>(t: { any }, lifecycle: string, ...:
 		table.insert(
 			promises,
 			Promise.defer(function(resolve)
-				resolve(
-					object.event[lifecycle](object.event, table.unpack(args))
-				)
+				resolve(object.event[lifecycle](object.event, table.unpack(args)))
 			end)
 		)
 	end

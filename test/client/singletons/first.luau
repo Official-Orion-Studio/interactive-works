@@ -2,26 +2,24 @@ local framework = require(game:GetService("ReplicatedStorage").lib)
 
 local controller
 do
-    controller = {
-        name = "MyController"
-    }
+	controller = {
+		name = "MyController",
+	}
 
-    local function onStart(self)
-        print("A controller has been loaded!")
-    end
+	local function onStart(self)
+		print("A controller has been loaded!")
+	end
 
-    controller.onStart = onStart
+	controller.onStart = onStart
 
-    local testingDelta = 0
-    local function onRender(self, delta: number)
-        if testingDelta <= 0 then
-            testingDelta = testingDelta + delta
+	local testingDelta = 0
+	local function onRender(self, delta: number)
+		if testingDelta <= 0 then
+			testingDelta = testingDelta + delta
+		end
+	end
 
-            print("Testing onRender: " .. testingDelta)
-        end
-    end
-
-    controller.onRender = onRender
+	controller.onRender = onRender
 end
 
 return framework.createController(controller)

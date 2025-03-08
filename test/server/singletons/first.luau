@@ -18,39 +18,35 @@ do
 	end
 
 	service.onInit = onInit
-	
+
 	local function onStart(self)
 		for _, player in Players:GetPlayers() do
 			self:playerAdd(player)
 		end
-	
+
 		Players.PlayerAdded:Connect(function(player)
 			self:playerAdd(player)
 		end)
-	
+
 		Players.PlayerRemoving:Connect(function(player)
 			self:playerRemove(player)
 		end)
 	end
 
 	service.onStart = onStart
-	
-	local function playerAdd(self, player)
-		print(self.addedSignals)
 
+	local function playerAdd(self, player)
 		util.initLifecycle(self.addedSignals, "onPlayerAdded", player)
 	end
 
 	service.playerAdd = playerAdd
-	
-	local function playerRemove(self, player)
-		print(self.removedSignals)
 
+	local function playerRemove(self, player)
 		util.initLifecycle(self.removedSignals, "onPlayerRemoved", player)
 	end
 
 	service.playerRemove = playerRemove
-	
+
 	local function doSomething(self, player)
 		print(`We are now doing something with {player}!`)
 	end

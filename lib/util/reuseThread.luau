@@ -11,13 +11,13 @@ local function reusableThread(func)
 		if inactiveThread == thread then
 			inactiveThread = nil
 		end
-		
+
 		func()
 
 		if inactiveThread ~= nil then
 			break
 		end
-		
+
 		inactiveThread = thread
 		func = coroutine.yield()
 	end
