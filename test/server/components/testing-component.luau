@@ -8,6 +8,9 @@ do
 			-- Here you can typecheck the instance structure
 			return true
 		end,
+		defaults = {
+			something = "this is a default",
+		},
 	}
 
 	local function constructor(self) end

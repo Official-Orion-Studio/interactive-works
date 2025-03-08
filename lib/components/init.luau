@@ -167,6 +167,14 @@ function Components:getAttributes(instance: Instance, ctor)
 
 	local defaults = ctor.defaults or {}
 
+	local merged = merge(defaults, attributes)
+	for key, value in merged do
+		local attribute = instance:GetAttribute(key)
+		if not attribute and value ~= attribute then
+			instance:SetAttribute(key, value)
+		end
+	end
+
 	return merge(defaults, attributes)
 end
 
