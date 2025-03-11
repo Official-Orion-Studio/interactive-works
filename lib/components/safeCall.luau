@@ -3,7 +3,7 @@
     and prints the error if it occurs. This is also done
     asynchronously.
 ]]
-return function(message: { string }, func: () -> (), printStack: boolean)
+return function(message: { string }, func: () -> (), printStack: boolean?)
 	if printStack == nil then
 		printStack = true
 	end

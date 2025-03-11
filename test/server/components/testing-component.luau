@@ -4,10 +4,6 @@ local component
 do
 	component = {
 		tag = "TestingComponent",
-		instanceGuard = function(instance)
-			-- Here you can typecheck the instance structure
-			return true
-		end,
 		defaults = {
 			something = "this is a default",
 		},
@@ -17,10 +13,9 @@ do
 
 	component.constructor = constructor
 
-	local function onStart(self, servicesBag)
-		local playerService = servicesBag.getService("playerService")
-
+	local function onStart(self)
 		print(`TestingComponent has started for {self.instance:GetFullName()}!`)
+		print("It's attributes are: ", self.attributes)
 
 		task.delay(5, function()
 			self.instance:SetAttribute("Test", "Hello, World!")
