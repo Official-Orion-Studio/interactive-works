@@ -61,8 +61,6 @@ function Components:onStart()
 			end
 
 		local instanceAdded = function(instance: Instance)
-			warn("The instance is being registered?")
-
 			if predicate and not predicate(instance) then
 				warn(
 					`[Components]: Instance {instance:GetFullName()} doesn't comply with the instance guard provided {tag}.`
@@ -98,8 +96,6 @@ end
 	@param ctor - The component's constructor.
 ]]
 function Components:addComponent(instance: Instance, ctor: any)
-	warn("The component is being added?")
-
 	local attributes = self:getAttributes(instance, ctor)
 
 	local activeComponents = self.activeComponents[instance]
@@ -128,15 +124,13 @@ function Components:setupComponent(
 	BaseComponent:setInstance(component, instance, attributes)
 	construct()
 
-	warn("The component is being setup?")
-
 	if component.onStart then
 		safeCall({
 			"[Components] Failed to start '" .. (tostring(ctor) .. "' for"),
 			instance,
 			"[" .. (instance:GetFullName() .. "]"),
 		}, function()
-			return component.onStart(component, self.servicesBag)
+			return component:onStart(self.servicesBag)
 		end)
 	end
 
