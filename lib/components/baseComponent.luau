@@ -43,10 +43,13 @@ end
 --[[
     Destroys the component.
 ]]
-function BaseComponent:destroy()
-	setmetatable(self, nil)
+function BaseComponent:destroy(component)
+	if component.destroy then
+		component:destroy()
+	end
 
-	self = nil
+	setmetatable(component, nil)
+	component = nil
 end
 
 -- Export

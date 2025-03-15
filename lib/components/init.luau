@@ -15,8 +15,10 @@ local safeCall = require(script.safeCall)
 --[=[
 	@interface ComponentConfig
 	.tag string,
-	.defaults? { [string]: any },
+	.defaults? { [string]: any }?,
 	.instanceGuard? (instance: Instance) -> boolean,
+	.ancestors { Instance }?,
+	.ignoreFlags boolean?
 	.constructor? () -> (),
 	.onStart? (singletonsBag: any) -> (),
 	.onAttributeChanged? (attribute: string, value: any) -> (),
@@ -30,8 +32,9 @@ local safeCall = require(script.safeCall)
 ]=]
 type ComponentConfig = {
 	tag: string,
-	defaults: { [string]: any },
+	defaults: { [string]: any }?,
 	instanceGuard: ((instance: Instance) -> boolean)?,
+	ancestors: { Instance }?,
 	constructor: (() -> ())?,
 	onStart: ((singletonsBag: any) -> ())?,
 	onAttributeChanged: ((attribute: string, value: any) -> ())?,
@@ -121,11 +124,20 @@ function Components:onStart()
 		return aOrder < bOrder
 	end)
 
+	local function logComponentVerbose(ctor, err: string, ...)
+		if ctor.ignoreFlags then
+			return
+		end
+
+		warn(`[Components]: {err}`, ...)
+	end
+
 	for _, ctor in ipairs(components) do
 		local tag = ctor.tag
 		if not tag then
-			warn(
-				`[Components]: Can't register a dependency which doesn't has a tag. {module and "Error on" .. module:GetFullName()}`
+			logComponentVerbose(
+				ctor,
+				`Can't register a dependency [{tostring(ctor)}] which doesn't has a tag.`
 			)
 
 			continue
@@ -133,8 +145,9 @@ function Components:onStart()
 
 		local identifier = Reflect.getAttachedMetadata(ctor, "identifier")
 		if identifier ~= "@component" then
-			warn(
-				`[Components]: Can't register a dependency which isn't a component. {module and "Error on" .. module:GetFullName()}`
+			logComponentVerbose(
+				ctor,
+				"Can't register a dependency [{tostring(ctor)}] which isn't a component."
 			)
 
 			continue
@@ -147,8 +160,30 @@ function Components:onStart()
 
 		local instanceAdded = function(instance: Instance)
 			if predicate and not predicate(instance) then
-				warn(
-					`[Components]: Instance {instance:GetFullName()} doesn't comply with the instance guard provided {tag}.`
+				logComponentVerbose(
+					ctor,
+					`Instance {instance:GetFullName()} doesn't comply with the instance guard provided {tag}.`
+				)
+
+				return
+			end
+
+			local isAncestor = false
+			if ctor.ancestors then
+				for _, ancestor in ipairs(ctor.ancestors) do
+					if instance:IsDescendantOf(ancestor) then
+						isAncestor = true
+
+						break
+					end
+				end
+			end
+
+			if not isAncestor then
+				logComponentVerbose(
+					ctor,
+					`Instance {instance:GetFullName()} doesn't comply with the ancestors provided.`,
+					ctor.ancestors
 				)
 
 				return
@@ -251,7 +286,7 @@ function Components:setupComponent(
 
 	if component.onStart then
 		safeCall({
-			"[Components] Failed to start '" .. (tostring(ctor) .. "' for"),
+			"[Components] Failed to start '" .. (tostring(component) .. "' for"),
 			instance,
 			"[" .. (instance:GetFullName() .. "]"),
 		}, function()
@@ -267,12 +302,12 @@ function Components:setupComponent(
 				local value = instance:GetAttribute(attribute)
 
 				safeCall({
-					"[Components] Failed to update '" .. (tostring(ctor) .. "' for"),
+					"[Components] Failed to update '" .. (tostring(component) .. "' for"),
 					instance,
 					"[" .. (instance:GetFullName() .. "]"),
 				}, function()
 					if component.onAttributeChanged then
-						return component:onAttributeChanged(attribute, value)
+						component:onAttributeChanged(attribute, value)
 					end
 				end)
 			end)
@@ -313,7 +348,27 @@ end
 
 	@ignore
 ]=]
-function Components:removeComponent(instance: Instance, ctor: any) end
+function Components:removeComponent(instance: Instance, ctor: any)
+	local activeComponents = self.activeComponents[instance]
+	if not activeComponents then
+		return
+	end
+
+	local component = activeComponents[ctor]
+	if not component then
+		return
+	end
+
+	activeComponents[ctor] = nil
+
+	local cleanup = self.cleanupComponents[ctor]
+	if cleanup then
+		cleanup:Cleanup()
+		self.cleanupComponents[ctor] = nil
+	end
+
+	BaseComponent:destroy(component)
+end
 
 -- Export
 local singleton

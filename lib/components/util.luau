@@ -17,6 +17,10 @@ export type Component = {
 export type ComponentConfig = {
 	tag: string,
 	loadOrder: number?,
+	defaults: { [string]: any }?,
+	instanceGuard: ((instance: Instance) -> boolean)?,
+	ancestors: { Instance }?,
+	ignoreFlags: boolean?,
 
 	constructor: ((self: ComponentConfig) -> nil)?,
 	onStart: ((self: Component) -> nil)?,

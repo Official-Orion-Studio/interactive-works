@@ -7,6 +7,8 @@ do
 		defaults = {
 			something = "this is a default",
 		},
+		ancestors = { workspace },
+		ignoreFlags = true,
 	}
 
 	local function constructor(self) end
@@ -16,14 +18,6 @@ do
 	local function onStart(self)
 		print(`TestingComponent has started for {self.instance:GetFullName()}!`)
 		print("It's attributes are: ", self.attributes)
-
-		print("The tuyi value is: ", self.attributes.tuyi)
-
-		task.delay(3, function()
-			if self.instance.Name == "Part 1" then
-				print(self.attributes.tuyi)
-			end
-		end)
 	end
 
 	component.onStart = onStart
