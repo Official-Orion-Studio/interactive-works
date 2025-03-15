@@ -52,6 +52,12 @@ do
 	end
 
 	service.doSomething = doSomething
+
+	local function onPreSimulation()
+		print("Pre-rendering!")
+	end
+
+	service.onPreSimulation = onPreSimulation
 end
 
 return framework.createService(service)

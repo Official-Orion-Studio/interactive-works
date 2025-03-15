@@ -12,9 +12,8 @@ local Reflect = require(script.Parent.reflect)
 	.constructor? () -> (),
 	.onInit? (servicesBag) -> (),
 	.onStart? () -> (),
-	.onTick? (dt: number) -> (),
-	.onPhysics? (dt: number) -> (),
-	.onRender? (dt: number) -> (),
+	.onPostSimulation? (dt: number) -> (),
+	.onPreSimulation? (dt: number) -> (),
 	@within Singleton
 
 	Represents a singleton's configuration.
@@ -23,8 +22,9 @@ export type SingletonConfig = {
 	name: string,
 	loadOrder: number?,
 	constructor: ((self: SingletonConfig) -> nil)?,
-	onTick: ((self: SingletonConfig, dt: number) -> nil)?,
-	onPhysics: ((self: SingletonConfig, dt: number) -> nil)?,
+	onPostSimulation: ((self: SingletonConfig, dt: number) -> nil)?,
+	onPreSimulation: ((self: SingletonConfig, dt: number) -> nil)?,
+	onPreRender: ((self: SingletonConfig, dt: number) -> nil)?,
 	onInit: ((self: SingletonConfig) -> nil)?,
 	onStart: ((self: SingletonConfig) -> nil)?,
 }
@@ -166,7 +166,7 @@ end
 Singleton.createService = function(config: SingletonConfig): SingletonConfig
 	assert(IS_SERVER, `[{PREFIX}:Singleton]: Can't create a service in the client.`)
 
-	if config.onRender then
+	if config.onPreRender then
 		error(`[{PREFIX}:Singleton]: Can't bind onRender lifecycle on the server.`)
 	end
 

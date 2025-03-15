@@ -56,15 +56,15 @@ function Interactive.init(): nil
 
 	Modding.onListenerAdded(function(ctor, id)
 		ticks[ctor] = id
-	end, "onTick")
+	end, "onPostSimulation")
 
 	Modding.onListenerAdded(function(ctor, id)
 		render[ctor] = id
-	end, "onRender")
+	end, "onPreRender")
 
 	Modding.onListenerAdded(function(ctor, id)
 		physics[ctor] = id
-	end, "onPhysics")
+	end, "onPreSimulation")
 
 	local init = {}
 	local start = {}
@@ -120,10 +120,10 @@ function Interactive.init(): nil
 
 	-- The rendering events
 	do
-		RunService.Heartbeat:Connect(function(dt)
+		RunService.PostSimulation:Connect(function(dt)
 			for dependency, id in ticks do
 				reuseThread(profileYielding(function()
-					dependency:onTick(dt)
+					dependency:onPostSimulation(dt)
 				end, id))
 			end
 		end)
@@ -131,7 +131,7 @@ function Interactive.init(): nil
 		RunService.PreSimulation:Connect(function(dt)
 			for dependency, id in physics do
 				reuseThread(profileYielding(function()
-					dependency:onPhysics(dt)
+					dependency:onPreSimulation(dt)
 				end, id))
 			end
 		end)
@@ -140,7 +140,7 @@ function Interactive.init(): nil
 			RunService.PreRender:Connect(function(dt)
 				for dependency, id in render do
 					reuseThread(profileYielding(function()
-						dependency:onRender(dt)
+						dependency:onPreRender(dt)
 					end, id))
 				end
 			end)

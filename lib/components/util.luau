@@ -9,9 +9,9 @@ local Reflect = require(script.Parent.Parent.reflect)
 export type Component = {
 	instance: Instance,
 
-	onTick: ((self: Component, dt: number) -> nil)?,
-	onPhysics: ((self: Component, dt: number) -> nil)?,
-	onRender: ((self: Component, dt: number) -> nil)?,
+	onPostSimulation: ((self: Component, dt: number) -> nil)?,
+	onPreSimulation: ((self: Component, dt: number) -> nil)?,
+	onPreRender: ((self: Component, dt: number) -> nil)?,
 }
 
 export type ComponentConfig = {

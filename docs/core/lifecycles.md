@@ -14,15 +14,15 @@ The `onInit` lifecycle is the first step on initializing a singleton/component, 
 
 The `onStart` lifecycle is the stage where all services are expected to be on an initialized state. This method doesn't yield and lifecycles aren't affected between each other.
 
-## onTick
+## onPostSimulation
 
 This is a lifecycle exposed to all singletons and components, directly binded to `RunService.Heartbeat`.
 
-## onPhysics
+## onPreSimulation
 
 This is a lifecycle exposed to all singletons and components, directly binded to `RunService.PreSimulation`.
 
-## onRender
+## onPreRender
 
 This is a lifecycle exposed to all singletons and components, directly binded to `RunService.PreRender`.
 

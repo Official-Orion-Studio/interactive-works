@@ -22,9 +22,9 @@ local safeCall = require(script.safeCall)
 	.constructor? () -> (),
 	.onStart? (singletonsBag: any) -> (),
 	.onAttributeChanged? (attribute: string, value: any) -> (),
-	.onTick? (dt: number) -> (),
-	.onPhysics? (dt: number) -> (),
-	.onRender? (dt: number) -> (),
+	.onPostSimulation? (dt: number) -> (),
+	.onPreSimulation? (dt: number) -> (),
+	.onPreRender? (dt: number) -> (),
 
 	@within Components
 
@@ -38,9 +38,9 @@ type ComponentConfig = {
 	constructor: (() -> ())?,
 	onStart: ((singletonsBag: any) -> ())?,
 	onAttributeChanged: ((attribute: string, value: any) -> ())?,
-	onTick: ((dt: number) -> ())?,
-	onPhysics: ((dt: number) -> ())?,
-	onRender: ((dt: number) -> ())?,
+	onPostSimulation: ((dt: number) -> ())?,
+	onPreSimulation: ((dt: number) -> ())?,
+	onPreRender: ((dt: number) -> ())?,
 }
 
 --[=[
