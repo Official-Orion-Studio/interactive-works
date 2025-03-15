@@ -13,6 +13,7 @@ classOrder = [
 
 [docusaurus]
 tagline = "A Luau framework that aims to be a unique solution for creating interactive experiences in Roblox."
+onBrokenAnchors = "log"
 
 [home]
 enabled = true
