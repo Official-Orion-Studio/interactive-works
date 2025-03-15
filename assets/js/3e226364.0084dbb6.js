@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdocs=self.webpackChunkdocs||[]).push([[932],{4410:e=>{e.exports=JSON.parse('{"sourceUrl":"https://github.com/Official-Orion-Studio/interactive-works/blob/main","baseUrl":"/interactive-works/","classOrder":["Interactive","Singleton","Components","Modding","Utility"],"apiCategories":[]}')}}]);
