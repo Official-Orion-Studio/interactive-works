@@ -95,10 +95,12 @@ end
 
 This is an object which can be accessed at any time, and it's updated through the Component's life. Accessing attributes from here is preferred over `self.instance:GetAttribute()`, as the latter is inconvinient.
 
-The next example prints all the attributes a component may have!
+The next example prints all the attributes a component may have and also change an attribute!
 ```luau
 function <component>:onStart()
     print(self.attributes)
+
+    self.attributes.MyAttribute = "A value that is replicated!"
 end
 ```
 

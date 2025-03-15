@@ -18,6 +18,10 @@ do
 	local function onStart(self)
 		print(`TestingComponent has started for {self.instance:GetFullName()}!`)
 		print("It's attributes are: ", self.attributes)
+
+		task.delay(5, function()
+			self.attributes.something = "BLATANT HUMANNNNN"
+		end)
 	end
 
 	component.onStart = onStart

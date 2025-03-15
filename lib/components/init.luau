@@ -281,19 +281,6 @@ function Components:setupComponent(
 	component: any,
 	construct: () -> ()
 )
-	BaseComponent:setInstance(component, instance, attributes)
-	construct()
-
-	if component.onStart then
-		safeCall({
-			"[Components] Failed to start '" .. (tostring(component) .. "' for"),
-			instance,
-			"[" .. (instance:GetFullName() .. "]"),
-		}, function()
-			return component:onStart(self.servicesBag)
-		end)
-	end
-
 	self.cleanupComponents[component] = Janitor.new()
 
 	for attribute in attributes do
@@ -307,11 +294,37 @@ function Components:setupComponent(
 					"[" .. (instance:GetFullName() .. "]"),
 				}, function()
 					if component.onAttributeChanged then
-						component:onAttributeChanged(attribute, value)
+						component.onAttributeChanged(component, attribute, value)
 					end
 				end)
 			end)
 		)
+	end
+
+	local copy = attributes
+	do
+		attributes = {}
+
+		setmetatable(attributes, {
+			__index = copy,
+			__newindex = function(_, key, value)
+				instance:SetAttribute(key, value)
+				copy[key] = value
+			end,
+		})
+	end
+
+	BaseComponent:setInstance(component, instance, attributes)
+	construct()
+
+	if component.onStart then
+		safeCall({
+			"[Components] Failed to start '" .. (tostring(component) .. "' for"),
+			instance,
+			"[" .. (instance:GetFullName() .. "]"),
+		}, function()
+			return component:onStart(self.servicesBag)
+		end)
 	end
 end
 
@@ -325,8 +338,6 @@ end
 ]=]
 function Components:getAttributes(instance: Instance, ctor: any)
 	local attributes = instance:GetAttributes()
-	local _attributes = {}
-
 	local defaults = ctor.defaults or {}
 
 	local merged = merge(defaults, attributes)

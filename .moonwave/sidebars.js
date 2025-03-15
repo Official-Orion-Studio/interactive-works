@@ -14,9 +14,9 @@ module.exports = {
             type: "category",
             label: "Core",
             items: [
-                "Core/singletons",
-                "Core/components",
-                "Core/lifecycles",
+                "core/singletons",
+                "core/components",
+                "core/lifecycles",
             ],
         },
     ],
