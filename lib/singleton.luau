@@ -5,24 +5,28 @@ local RunService = game:GetService("RunService")
 local Modding = require(script.Parent.modding)
 local Reflect = require(script.Parent.reflect)
 
-local Promise = require(script.Parent.Parent.Promise)
+--[=[
+	@interface SingletonConfig
+	.name string,
+	.loadOrder? number,
+	.constructor? () -> (),
+	.onInit? (servicesBag) -> (),
+	.onStart? () -> (),
+	.onTick? (dt: number) -> (),
+	.onPhysics? (dt: number) -> (),
+	.onRender? (dt: number) -> (),
+	@within Singleton
 
-local profileYielding = require(script.Parent.util.profileYielding)
-local reuseThread = require(script.Parent.util.reuseThread)
-
--- Types
-export type Singleton = {
-	constructor: ((self: Singleton) -> nil)?,
-	onTick: ((self: Singleton, dt: number) -> nil)?,
-	onPhysics: ((self: Singleton, dt: number) -> nil)?,
-	onRender: ((self: Singleton, dt: number) -> nil)?,
-	onInit: ((self: Singleton) -> nil)?,
-	onStart: ((self: Singleton) -> nil)?,
-}
-
+	Represents a singleton's configuration.
+]=]
 export type SingletonConfig = {
 	name: string,
 	loadOrder: number?,
+	constructor: ((self: SingletonConfig) -> nil)?,
+	onTick: ((self: SingletonConfig, dt: number) -> nil)?,
+	onPhysics: ((self: SingletonConfig, dt: number) -> nil)?,
+	onInit: ((self: SingletonConfig) -> nil)?,
+	onStart: ((self: SingletonConfig) -> nil)?,
 }
 
 -- Constants
@@ -33,53 +37,109 @@ local PREFIX = IS_SERVER and "Server" or "Client"
 local Objects = {}
 local FromObject = {}
 
--- Module
+--[=[
+	@class Singleton
+
+	Singletons are objects that are instantiated only once and can be accessed from a single 
+	point of the application. They are useful for managing global state, functionality
+	and keeping logic where it belongs. 
+
+	Singletons should hold logic to only one system at a time, making sure that
+	separate logic or functionality not-related to the main system is kept in a separate
+	singleton.
+
+	Here's an example of a singleton:
+
+	```lua title="src/server/services/service.luau"
+	local framework = require(...)
+	local service = {
+		name = "Service",
+	}
+
+	function service:onInit(servicesBag)
+		...
+	end
+
+	function service:onStart()
+		...
+	end
+
+	return framework.createService(service)
+	```
+]=]
 local Singleton = {}
 
---[[
-	Creates a Singleton.
+--[=[
+	Checks and registers a singleton. Making sure to bind its lifecycles as well.
 
-	@param config - The singleton's config.
-]]
-function Singleton.create(t: SingletonConfig): Singleton
-	assert(typeof(t) == "table", `[{PREFIX}:Singleton]: Can't create a singleton without a table.`)
+	Lifecycle methods are methods that are called at a specific time during the singleton's lifecycle,
+	and these are called by another singletons that may have setup such lifecycles. All lifecycles
+	should start with `on...`, as it's currently the only way to differentiate from methods.
+
+	```lua
+	local singleton = {
+		name = "Singleton",
+		onInit = function(self, servicesBag)
+			...
+		end,
+		onStart = function(self)
+			...
+		end,
+		onLifecycle = function(self)
+			... -- This will be called sometime in execution.
+		end
+	}
+	```
+
+
+	@within Singleton
+	@param config -- The singleton's config.
+]=]
+function Singleton.create(config: SingletonConfig): SingletonConfig
 	assert(
-		typeof(t.name) == "string",
+		typeof(config) == "table",
+		`[{PREFIX}:Singleton]: Can't create a singleton without a table.`
+	)
+	assert(
+		typeof(config.name) == "string",
 		`[{PREFIX}:Singleton]: Can't create a singleton without a name.`
 	)
-	assert(#t.name > 0, `[{PREFIX}:Singleton]: Can't create a singleton with an empty name.`)
+	assert(#config.name > 0, `[{PREFIX}:Singleton]: Can't create a singleton with an empty name.`)
 	assert(
-		not Objects[t.name],
-		`[{PREFIX}:Singleton]: Singleton with name {t.name} already exists.`
+		not Objects[config.name],
+		`[{PREFIX}:Singleton]: Singleton with name {config.name} already exists.`
 	)
 
-	for prop, value in t do
+	for prop, value in config do
 		local isLifecycle = string.find(prop, "on") ~= nil
 		local isInitial = prop == "onInit" or prop == "onStart"
 		local isFn = typeof(value) == "function"
 
 		if isLifecycle and not isInitial and isFn then
-			Modding.addListener(t, prop)
+			Modding.addListener(config, prop)
 		end
 	end
 
-	Objects[t.name] = t
-	FromObject[t] = t.name
+	Objects[config.name] = config
+	FromObject[config] = config.name
 
 	Reflect.attachMetadata(
-		t,
-		{ identifier = "@singleton", ["s:loadOrder"] = t.loadOrder or math.huge }
+		config,
+		{ identifier = "@singleton", ["s:loadOrder"] = config.loadOrder or math.huge }
 	)
 
-	return t :: any
+	return config :: any
 end
 
---[[
-	Returns a singleton by its name.
+--[=[
+	Returns a singleton by its name. If the singleton hasn't been initialized, it will be
+	initialized and returned.
 
-	@param key - The singleton's name.
-]]
-Singleton.get = function(key: string): Singleton
+	@within Singleton
+	@param key
+	@return SingletonConfig
+]=]
+Singleton.get = function(key: string): SingletonConfig
 	local initialized = Objects[key]
 	if initialized then
 		return initialized
@@ -95,12 +155,47 @@ Singleton.get = function(key: string): Singleton
 	return initializedSingleton
 end
 
---[[
-	Returns a service by its name.
+--[=[
+	Creates a service on the server.
+	
+	@server
+	@within Singleton
 
-	@param key - The service's name.
-]]
-Singleton.getService = function(key: string | Instance): Singleton
+	@param config
+]=]
+Singleton.createService = function(config: SingletonConfig): SingletonConfig
+	assert(IS_SERVER, `[{PREFIX}:Singleton]: Can't create a service in the client.`)
+
+	if config.onRender then
+		error(`[{PREFIX}:Singleton]: Can't bind onRender lifecycle on the server.`)
+	end
+
+	return Singleton.create(config)
+end
+
+--[=[
+	Creates a controller on the client.
+	
+	@client
+	@within Singleton
+
+	@param config
+]=]
+Singleton.createController = function(config: SingletonConfig): SingletonConfig
+	assert(not IS_SERVER, `[{PREFIX}:Singleton]: Can't create a controller on the server.`)
+
+	return Singleton.create(config)
+end
+
+--[=[
+	Returns a service by its name. This method should only be called by the server.
+
+	@server
+	@within Singleton
+
+	@param key
+]=]
+Singleton.getService = function(key: string): SingletonConfig
 	if not IS_SERVER then
 		error(`[{PREFIX}:Singleton]: Can't get a service on the client.`)
 	end
@@ -108,43 +203,20 @@ Singleton.getService = function(key: string | Instance): Singleton
 	return Singleton.get(key)
 end
 
---[[
+--[=[
 	Returns a controller by its name.
 
-	@param key - The controller's name.
-]]
-Singleton.getController = function(key: string): Singleton
+	@client
+	@within Singleton
+
+	@param key
+]=]
+Singleton.getController = function(key: string): SingletonConfig
 	if IS_SERVER then
 		error(`[{PREFIX}:Singleton]: Can't get a controller on the server.`)
 	end
 
 	return Singleton.get(key)
-end
-
---[[
-	Creates a controller on the client.
-	
-	@param config - The controller config.
-]]
-Singleton.createController = function(t: SingletonConfig): Singleton
-	assert(not IS_SERVER, `[{PREFIX}:Singleton]: Can't create a controller on the server.`)
-
-	return Singleton.create(t)
-end
-
---[[
-	Creates a service on the server.
-	
-	@param config - The service config.
-]]
-Singleton.createService = function(t: SingletonConfig): Singleton
-	assert(IS_SERVER, `[{PREFIX}:Singleton]: Can't create a service in the client.`)
-
-	if t.onRender then
-		error(`[{PREFIX}:Singleton]: Can't bind onRender lifecycle on the server.`)
-	end
-
-	return Singleton.create(t)
 end
 
 return Singleton

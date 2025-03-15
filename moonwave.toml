@@ -1,0 +1,30 @@
+title = "Interactive Works"
+gitRepoUrl = "https://github.com/Official-Orion-Studio/interactive-works"
+gitSourceBranch = "main"
+changelog = true
+
+classOrder = [
+	"Interactive",
+	"Singleton",
+    "Components",
+    "Modding",
+    "Utility"
+]
+
+[docusaurus]
+tagline = "A Luau framework that aims to be a unique solution for creating interactive experiences in Roblox."
+
+[home]
+enabled = true
+
+[[home.features]]
+title = "Versatile, modular, predictable"
+description = "InteractiveWorks is a library that provides a set of tools to create interactive experiences in Roblox by providing a set order, so you always have the full control."
+
+[[home.features]]
+title = "Easy to use"
+description = "InteractiveWorks is designed to be easy to use, with a simple API that you may already be used to!"
+
+[[home.features]]
+title = "In constant update"
+description = "There's always something new in InteractiveWorks, with constant updates and new features being added constantly and availability from our team to clarify any doubts!"

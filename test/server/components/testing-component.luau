@@ -3,7 +3,7 @@ local framework = require(game:GetService("ReplicatedStorage").lib)
 local component
 do
 	component = {
-		tag = "TestingComponent",
+		tag = "testing",
 		defaults = {
 			something = "this is a default",
 		},
@@ -17,8 +17,12 @@ do
 		print(`TestingComponent has started for {self.instance:GetFullName()}!`)
 		print("It's attributes are: ", self.attributes)
 
-		task.delay(5, function()
-			self.instance:SetAttribute("Test", "Hello, World!")
+		print("The tuyi value is: ", self.attributes.tuyi)
+
+		task.delay(3, function()
+			if self.instance.Name == "Part 1" then
+				print(self.attributes.tuyi)
+			end
 		end)
 	end
 

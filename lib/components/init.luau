@@ -12,9 +12,89 @@ local Singleton = require(script.Parent.singleton)
 local merge = require(script.merge)
 local safeCall = require(script.safeCall)
 
--- Module
+--[=[
+	@interface ComponentConfig
+	.tag string,
+	.defaults? { [string]: any },
+	.instanceGuard? (instance: Instance) -> boolean,
+	.constructor? () -> (),
+	.onStart? (singletonsBag: any) -> (),
+	.onAttributeChanged? (attribute: string, value: any) -> (),
+	.onTick? (dt: number) -> (),
+	.onPhysics? (dt: number) -> (),
+	.onRender? (dt: number) -> (),
+
+	@within Components
+
+	The interface for a ComponentConfig. The initial state of a component.
+]=]
+type ComponentConfig = {
+	tag: string,
+	defaults: { [string]: any },
+	instanceGuard: ((instance: Instance) -> boolean)?,
+	constructor: (() -> ())?,
+	onStart: ((singletonsBag: any) -> ())?,
+	onAttributeChanged: ((attribute: string, value: any) -> ())?,
+	onTick: ((dt: number) -> ())?,
+	onPhysics: ((dt: number) -> ())?,
+	onRender: ((dt: number) -> ())?,
+}
+
+--[=[
+	@interface Component
+	.instance Instance -- The instance of the component.
+	.attributes { [string]: any } -- The attributes of the component.
+
+	@within Components
+
+	The interface for a Component.
+]=]
+type Component = {
+	instance: Instance,
+	attributes: { [string]: any },
+}
+
+--[=[
+	@class Components
+
+	Manages all components in the game, listening for new instances to be added
+	and cleaning their references them when they are removed.
+
+	Components are a powerful tool to create modular and reusable code in your game,
+	which will depend on instances being added/removed.
+
+	They can also include lifecycles made by services, and also add lifecycles 
+	that could be used by other components or singletons in the game.
+
+	This is an example usage of components:
+	```lua title="src/server/components/myComponent.luau"
+	local framework = require("...")
+
+	local component = {
+		tag = "MyComponent",
+	}
+
+	function component:constructor()
+		...
+	end
+
+	function component:onStart(singletonsBag)
+		...
+	end
+
+	function component:onAttributeChanged(attribute: string, value: any)
+		...
+	end
+
+	function component:onLifecycle(...)
+		...
+	end
+
+	return framework.createComponent(component)
+	```
+]=]
 local Components = {
-	name = "components",
+	name = "_componentsService",
 }
 
 --[[ @ignore ]]
@@ -25,7 +105,12 @@ function Components:onInit(servicesBag)
 	self.cleanupComponents = {}
 end
 
---[[ @ignore ]]
+--[=[
+	Registers all components and listens for new instances to be added
+	to the game.
+
+	@ignore
+]=]
 function Components:onStart()
 	local components = ComponentsUtil.getComponents()
 
@@ -89,12 +174,24 @@ function Components:onStart()
 	end
 end
 
---[[
-	Adds a component to an instance.
+--[=[
+	Adds a component to an instance linked by the created object. This
+	will register the component, start its lifecycles, bind callbacks to the
+	required listeners and setup their attributes and properties.
+		
+	:::note
+	This function can be called upon a component that is yet to be registered, though
+	it is not recommended. Best practice is to rely on `framework.createComponent`,
+	as it is guaranteed to initialize the component correctly.
 
-	@param instance - The instance to add the component to.
-	@param ctor - The component's constructor.
-]]
+	This method should only be used for debugging purposes when isolating a single 
+	component.
+	:::
+
+	@within Components
+	@param instance -- The instance to add the component to.
+	@param ctor ComponentConfig -- The component's constructor.
+]=]
 function Components:addComponent(instance: Instance, ctor: any)
 	local attributes = self:getAttributes(instance, ctor)
 
@@ -111,10 +208,38 @@ function Components:addComponent(instance: Instance, ctor: any)
 	self:setupComponent(instance, attributes, table.unpack(Modding.getDeferredConstructor(ctor)))
 end
 
---[[
+--[=[
 	Setups a component, finally running its lifecycles and constructing it
 	with the given instance.
-]]
+
+	In the most raw form, this function is responsible for setting up a component
+	and running its lifecycle methods. Can be used to quickly debug a component structure.
+	```lua title="/lib/components/init.luau"
+	local frameworkComponents = require(...)
+	local component = {}
+
+	function component:constructor()
+		print("Hello, world!")
+	end
+
+	function component:onStart()
+		print("I have started!")
+	end
+
+	frameworkComponents:setupComponent(<Instance>, { ... }, component, function()
+		component:constructor()
+	end)
+	```
+
+	:::warning
+	You should not call this function directly, instead, use `framework.createComponent`.
+	:::
+
+	@param instance -- The instance to add the component to.
+	@param attributes -- The attributes of the instance.
+	@param component ComponentConfig -- The component to setup.
+	@param construct -- The constructor of the component, sometimes this may be a deferred constructor.
+]=]
 function Components:setupComponent(
 	instance: Instance,
 	attributes: { [string]: any },
@@ -155,13 +280,15 @@ function Components:setupComponent(
 	end
 end
 
---[[
+--[=[
 	Returns the attributes of an instance.
 
-	@param instance - The instance to get the attributes from.
-	@param ctor - The component's constructor.
-]]
-function Components:getAttributes(instance: Instance, ctor)
+	@param instance -- The instance to get the attributes from.
+	@param ctor -- The component's constructor.
+
+	@ignore
+]=]
+function Components:getAttributes(instance: Instance, ctor: any)
 	local attributes = instance:GetAttributes()
 	local _attributes = {}
 
@@ -178,13 +305,15 @@ function Components:getAttributes(instance: Instance, ctor)
 	return merge(defaults, attributes)
 end
 
---[[
+--[=[
 	Removes a component from an instance.
 
-	@param instance - The instance to remove the component from.
-	@param ctor - The component's constructor.
-]]
-function Components:removeComponent(instance, ctor) end
+	@param instance -- The instance to remove the component from.
+	@param ctor -- The component's constructor.
+
+	@ignore
+]=]
+function Components:removeComponent(instance: Instance, ctor: any) end
 
 -- Export
 local singleton

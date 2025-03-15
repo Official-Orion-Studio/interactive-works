@@ -104,7 +104,17 @@ function Interactive.init(): nil
 	end
 
 	-- Waits for all onInit methods to be executed.
-	Promise.all(promises):expect()
+	Promise.all(promises)
+		:catch(function(err)
+			warn(
+				`[{PREFIX}:Interactive]: An error occurred while initializing the dependencies. ${tostring(
+					err
+				)}`
+			)
+		end)
+		:await()
+
+	table.clear(promises)
 
 	debug.resetmemorycategory()
 
@@ -143,10 +153,25 @@ function Interactive.init(): nil
 
 		logVerbose("onStart " .. id)
 
-		reuseThread(profileYielding(function()
-			dependency:onStart()
-		end, id))
+		table.insert(
+			promises,
+			Promise.try(function()
+				reuseThread(profileYielding(function()
+					dependency:onStart()
+				end, id))
+			end)
+		)
 	end
+
+	Promise.all(promises)
+		:catch(function(err)
+			warn(
+				`[{PREFIX}:Interactive]: An error occurred while starting the dependencies. ${tostring(
+					err
+				)}`
+			)
+		end)
+		:await()
 
 	return nil
 end

@@ -9,15 +9,24 @@ local Promise = require(script.Parent.Parent.Parent.Promise)
 local IS_SERVER = RunService:IsServer()
 local PREFIX = IS_SERVER and "Server" or "Client"
 
--- Module
+--[=[
+	@class Utility
+
+	Utility is a module that contains utility functions that can be used
+	across the project. Tries to expose a set of functions that can be
+	used to simplify the development process, and perhaps make it easier
+	to understand and maintain.
+]=]
 local InteractiveUtil = {}
 
---[[
+--[=[
 	Set ups a lifecycle for a given array of listeners data.
 
-	@param t - The listeners table.
-	@param lifecycle - The lifecycle to listen for.
-]]
+	@within Utility
+	@param t -- The listeners table.
+	@param lifecycle -- The lifecycle to listen for.
+	@return ()
+]=]
 function InteractiveUtil.setupLifecycle(t: { any }, lifecycle: string): nil
 	assert(
 		lifecycle and lifecycle ~= "" and #lifecycle > 0,
@@ -42,13 +51,15 @@ function InteractiveUtil.setupLifecycle(t: { any }, lifecycle: string): nil
 	return nil
 end
 
---[[
+--[=[
 	Initializes a lifecycle for a given function.
 
-	@param t - The object to initialize the lifecycle for.
-	@param lifecycle - The lifecycle to initialize.
-	@param ... - The arguments to pass to the function.
-]]
+	@within Utility
+	@param t -- The object to initialize the lifecycle for.
+	@param lifecycle -- The lifecycle to initialize.
+	@param ... -- The arguments to pass to the function.
+	@return ()
+]=]
 function InteractiveUtil.initLifecycle<U...>(t: { any }, lifecycle: string, ...: U...): nil
 	local promises = {}
 	local args = { ... }

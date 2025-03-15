@@ -1,5 +1,0 @@
-{
-    "scripts": {
-        "test:sync": "rojo serve test.project.json"
-    }
-}
