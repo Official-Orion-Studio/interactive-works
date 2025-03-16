@@ -161,9 +161,9 @@ end
 	@server
 	@within Singleton
 
-	@param config
+	@param config SingletonConfig
 ]=]
-Singleton.createService = function(config: SingletonConfig): SingletonConfig
+Singleton.createService = function(config: any): SingletonConfig
 	assert(IS_SERVER, `[{PREFIX}:Singleton]: Can't create a service in the client.`)
 
 	if config.onPreRender then
@@ -179,9 +179,9 @@ end
 	@client
 	@within Singleton
 
-	@param config
+	@param config SingletonConfig
 ]=]
-Singleton.createController = function(config: SingletonConfig): SingletonConfig
+Singleton.createController = function(config: any): SingletonConfig
 	assert(not IS_SERVER, `[{PREFIX}:Singleton]: Can't create a controller on the server.`)
 
 	return Singleton.create(config)
