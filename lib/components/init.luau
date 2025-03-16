@@ -168,8 +168,9 @@ function Components:onStart()
 				return
 			end
 
-			local isAncestor = false
 			if ctor.ancestors then
+				local isAncestor = false
+
 				for _, ancestor in ipairs(ctor.ancestors) do
 					if instance:IsDescendantOf(ancestor) then
 						isAncestor = true
@@ -177,16 +178,16 @@ function Components:onStart()
 						break
 					end
 				end
-			end
 
-			if not isAncestor then
-				logComponentVerbose(
-					ctor,
-					`Instance {instance:GetFullName()} doesn't comply with the ancestors provided.`,
-					ctor.ancestors
-				)
+				if not isAncestor then
+					logComponentVerbose(
+						ctor,
+						`Instance {instance:GetFullName()} doesn't comply with the ancestors provided.`,
+						ctor.ancestors
+					)
 
-				return
+					return
+				end
 			end
 
 			self:addComponent(instance, ctor)
