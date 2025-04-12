@@ -60,7 +60,7 @@ end
 	@param ... -- The arguments to pass to the function.
 	@return ()
 ]=]
-function InteractiveUtil.initLifecycle<U...>(t: { any }, lifecycle: string, ...: U...): nil
+function InteractiveUtil.initLifecycle<U...>(t: { any }, lifecycle: string, ...: U...): Promise
 	local promises = {}
 	local args = { ... }
 
@@ -73,9 +73,7 @@ function InteractiveUtil.initLifecycle<U...>(t: { any }, lifecycle: string, ...:
 		)
 	end
 
-	Promise.all(promises)
-
-	return nil
+	return Promise.all(promises)
 end
 
 return InteractiveUtil

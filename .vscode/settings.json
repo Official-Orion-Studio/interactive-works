@@ -11,4 +11,7 @@
     "editor.formatOnSave": true,
     "editor.formatOnType": true,
     "luau-lsp.hover.multilineFunctionDefinitions": true,
+    "luau-lsp.types.definitionFiles": [
+        "types/promise.d.luau",
+    ],
 }
