@@ -239,9 +239,10 @@ function Components:addComponent(instance: Instance, ctor: any)
 		return
 	end
 
-	activeComponents[ctor] = true
+	local component, deferredCtor = table.unpack(Modding.getDeferredConstructor(ctor))
+	activeComponents[ctor] = component
 
-	self:setupComponent(instance, attributes, table.unpack(Modding.getDeferredConstructor(ctor)))
+	self:setupComponent(instance, attributes, component, deferredCtor)
 end
 
 --[=[
