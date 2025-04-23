@@ -295,6 +295,8 @@ function Components:setupComponent(
 					instance,
 					"[" .. (instance:GetFullName() .. "]"),
 				}, function()
+					component.attributes[attribute] = value
+
 					if component.onAttributeChanged then
 						component.onAttributeChanged(component, attribute, value)
 					end
@@ -345,7 +347,7 @@ function Components:getAttributes(instance: Instance, ctor: any)
 	local merged = merge(defaults, attributes)
 	for key, value in merged do
 		local attribute = instance:GetAttribute(key)
-		if not attribute and value ~= attribute then
+		if attribute == nil and value ~= attribute then
 			instance:SetAttribute(key, value)
 		end
 	end
