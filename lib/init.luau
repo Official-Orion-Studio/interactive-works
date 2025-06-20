@@ -7,10 +7,14 @@ local singleton = require(script.singleton)
 local util = require(script.util.utility)
 
 -- Types
+type Components = {
+	getComponent: <T>(self: Components, instance: Instance) -> T,
+}
+
 type Interactive = {
 	modding: typeof(modding),
 	util: typeof(util),
-	components: typeof(components),
+	components: Components,
 
 	init: () -> nil,
 	addPath: (path: string | Instance) -> nil,
