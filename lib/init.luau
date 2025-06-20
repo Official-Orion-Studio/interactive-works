@@ -1,4 +1,5 @@
 -- Dependencies
+local components = require(script.components)
 local componentsUtil = require(script.components.util)
 local interactive = require(script.interactive)
 local modding = require(script.modding)
@@ -175,6 +176,12 @@ Interactive.getController = singleton.getController
 ]=]
 Interactive.createComponent = componentsUtil.createComponent
 
+--[=[
+	@within Interactive
+	@prop components Components
+
+	Interactive also provides a way to interact with the components library.
+]=]
 Interactive.components = components
 
 --[=[

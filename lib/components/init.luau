@@ -106,6 +106,7 @@ function Components:onInit(servicesBag)
 
 	self.activeComponents = {}
 	self.cleanupComponents = {}
+	self.registeredComponents = {}
 end
 
 --[=[
@@ -242,6 +243,8 @@ function Components:addComponent(instance: Instance, ctor: any)
 	local component, deferredCtor = table.unpack(Modding.getDeferredConstructor(ctor))
 	activeComponents[ctor] = component
 
+	self.activeComponents[instance] = activeComponents
+
 	self:setupComponent(instance, attributes, component, deferredCtor)
 end
 
@@ -330,6 +333,8 @@ function Components:setupComponent(
 			return component:onStart(self.servicesBag)
 		end)
 	end
+
+	self.registeredComponents[instance] = component
 end
 
 --[=[
@@ -382,7 +387,26 @@ function Components:removeComponent(instance: Instance, ctor: any)
 		self.cleanupComponents[ctor] = nil
 	end
 
+	self.registeredComponents[instance] = nil
+
 	BaseComponent:destroy(component)
+end
+
+--[=[
+	Returns a component from an instance.
+
+	@param instance -- The instance to get the component from.
+	@param ctor -- The component's constructor.
+
+	@ignore
+]=]
+function Components:getComponent(instance: Instance, ctor: any?)
+	local activeComponents = self.activeComponents[instance]
+	if not activeComponents then
+		return nil
+	end
+
+	return activeComponents[ctor] or self.registeredComponents[instance]
 end
 
 -- Export
