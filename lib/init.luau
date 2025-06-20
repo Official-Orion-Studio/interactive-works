@@ -10,6 +10,7 @@ local util = require(script.util.utility)
 type Interactive = {
 	modding: typeof(modding),
 	util: typeof(util),
+	components: typeof(components),
 
 	init: () -> nil,
 	addPath: (path: string | Instance) -> nil,
