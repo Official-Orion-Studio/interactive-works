@@ -32,6 +32,12 @@ do
 
 	component.onPlayerAdded = onPlayerAdded
 
+	local function onPostSimulation(self, dt: number)
+		print(`Post simulation for {self.instance:GetFullName()} with dt = {dt}`)
+	end
+
+	component.onPostSimulation = onPostSimulation
+
 	local function onAttributeChanged(self, attribute, value)
 		print(`{self.instance:GetFullName()} has changed {attribute} to {value}!`)
 	end

@@ -199,7 +199,12 @@ function Components:onStart()
 			self:removeComponent(instance, ctor)
 		end)
 
-		for _, instance in CollectionService:GetTagged(tag) do
+		local tagged = CollectionService:GetTagged(tag)
+		if not next(tagged) then -- No need to instantiate if no instances are tagged
+			continue
+		end
+
+		for _, instance in tagged do
 			safeCall({
 				"[Components] Failed to instantiate '" .. (tostring(ctor) .. "' for"),
 				instance,
@@ -218,22 +223,20 @@ end
 	@param dt -- The delta time since the last simulation step.
 ]=]
 function Components:onPostSimulation(dt: number)
-	for _, activeComponents in pairs(self.activeComponents) do
-		for _, component in pairs(activeComponents) do
-			if component.onPostSimulation then
-				safeCall({
-					"[Components] Failed to run onPostSimulation for '"
-						.. (tostring(component) .. "' for"),
-					activeComponents,
-					"["
-						.. (
-							activeComponents.instance
-							and activeComponents.instance:GetFullName() .. "]"
-						),
-				}, function()
-					return component:onPostSimulation(dt)
-				end)
-			end
+	if not next(self.registeredComponents) then
+		return
+	end
+
+	for _, component in self.registeredComponents do
+		if component.onPostSimulation then
+			safeCall({
+				"[Components] Failed to run onPostSimulation for '"
+					.. (tostring(component) .. "' for"),
+				component,
+				"[" .. (component.instance and component.instance:GetFullName() .. "]"),
+			}, function()
+				return component:onPostSimulation(dt)
+			end)
 		end
 	end
 end
@@ -245,23 +248,20 @@ end
 	@param dt -- The delta time since the last simulation step.
 ]=]
 function Components:onPreSimulation(dt: number)
-	for _, activeComponents in pairs(self.activeComponents) do
-		for _, component in pairs(activeComponents) do
-			if component.onPreSimulation then
-				safeCall({
-					"[Components] Failed to run onPreSimulation for '"
-						.. (tostring(component) .. "' for"),
-					activeComponents,
-					"["
-						.. (
-							activeComponents.instance
-								and activeComponents.instance:GetFullName() .. "]"
-							or "]"
-						),
-				}, function()
-					return component:onPreSimulation(dt)
-				end)
-			end
+	if not next(self.registeredComponents) then
+		return
+	end
+
+	for _, component in self.registeredComponents do
+		if component.onPreSimulation then
+			safeCall({
+				"[Components] Failed to run onPreSimulation for '"
+					.. (tostring(component) .. "' for"),
+				component,
+				"[" .. (component.instance and component.instance:GetFullName() .. "]" or "]"),
+			}, function()
+				return component:onPreSimulation(dt)
+			end)
 		end
 	end
 end
@@ -273,23 +273,19 @@ end
 	@param dt -- The delta time since the last render step.
 ]=]
 function Components:onPreRender(dt: number)
-	for _, activeComponents in pairs(self.activeComponents) do
-		for _, component in pairs(activeComponents) do
-			if component.onPreRender then
-				safeCall({
-					"[Components] Failed to run onPreRender for '"
-						.. (tostring(component) .. "' for"),
-					activeComponents,
-					"["
-						.. (
-							activeComponents.instance
-								and activeComponents.instance:GetFullName() .. "]"
-							or "]"
-						),
-				}, function()
-					return component:onPreRender(dt)
-				end)
-			end
+	if not next(self.registeredComponents) then
+		return
+	end
+
+	for _, component in self.registeredComponents do
+		if component.onPreRender then
+			safeCall({
+				"[Components] Failed to run onPreRender for '" .. (tostring(component) .. "' for"),
+				component,
+				"[" .. (component.instance and component.instance:GetFullName() .. "]" or "]"),
+			}, function()
+				return component:onPreRender(dt)
+			end)
 		end
 	end
 end

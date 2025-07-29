@@ -32,6 +32,14 @@ local Objects = {}
 local IS_SERVER = RunService:IsServer()
 local PREFIX = IS_SERVER and "Server" or "Client"
 
+local AVOID_LIFECYCLES = {
+	"onStart",
+	"onInit",
+	"onPostSimulation",
+	"onPreRender",
+	"onPreSimulation",
+}
+
 --[=[
 	@class ComponentUtil
 	
@@ -63,7 +71,7 @@ function ComponentsUtil.createComponent(config: any): Component
 
 	for prop, value in config do
 		local isLifecycle = string.find(prop, "on") ~= nil
-		local isInitial = prop == "onInit" or prop == "onStart"
+		local isInitial = table.find(AVOID_LIFECYCLES, prop) ~= nil
 		local isFn = typeof(value) == "function"
 
 		if isLifecycle and not isInitial and isFn then
