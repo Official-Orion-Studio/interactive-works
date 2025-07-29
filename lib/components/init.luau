@@ -225,7 +225,11 @@ function Components:onPostSimulation(dt: number)
 					"[Components] Failed to run onPostSimulation for '"
 						.. (tostring(component) .. "' for"),
 					activeComponents,
-					"[" .. (activeComponents:GetFullName() .. "]"),
+					"["
+						.. (
+							activeComponents.instance
+							and activeComponents.instance:GetFullName() .. "]"
+						),
 				}, function()
 					return component:onPostSimulation(dt)
 				end)
@@ -248,7 +252,12 @@ function Components:onPreSimulation(dt: number)
 					"[Components] Failed to run onPreSimulation for '"
 						.. (tostring(component) .. "' for"),
 					activeComponents,
-					"[" .. (activeComponents:GetFullName() .. "]"),
+					"["
+						.. (
+							activeComponents.instance
+								and activeComponents.instance:GetFullName() .. "]"
+							or "]"
+						),
 				}, function()
 					return component:onPreSimulation(dt)
 				end)
@@ -271,7 +280,12 @@ function Components:onPreRender(dt: number)
 					"[Components] Failed to run onPreRender for '"
 						.. (tostring(component) .. "' for"),
 					activeComponents,
-					"[" .. (activeComponents:GetFullName() .. "]"),
+					"["
+						.. (
+							activeComponents.instance
+								and activeComponents.instance:GetFullName() .. "]"
+							or "]"
+						),
 				}, function()
 					return component:onPreRender(dt)
 				end)
@@ -364,7 +378,7 @@ function Components:setupComponent(
 
 				safeCall({
 					"[Components] Failed to update '" .. (tostring(component) .. "' for"),
-					instance,
+					instance.Name,
 					"[" .. (instance:GetFullName() .. "]"),
 				}, function()
 					component.attributes[attribute] = value
@@ -396,7 +410,7 @@ function Components:setupComponent(
 	if component.onStart then
 		safeCall({
 			"[Components] Failed to start '" .. (tostring(component) .. "' for"),
-			instance,
+			instance.Name,
 			"[" .. (instance:GetFullName() .. "]"),
 		}, function()
 			return component:onStart(self.servicesBag)
