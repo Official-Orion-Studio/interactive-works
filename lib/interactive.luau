@@ -3,7 +3,6 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 -- Dependencies
-local Components = require(script.Parent.components)
 local Modding = require(script.Parent.modding)
 local Reflect = require(script.Parent.reflect)
 local Singleton = require(script.Parent.singleton)

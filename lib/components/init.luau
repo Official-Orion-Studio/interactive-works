@@ -212,6 +212,75 @@ function Components:onStart()
 end
 
 --[=[
+	Called before the simulation step, this will run all components
+	that have the `onPreSimulation` lifecycle method.
+
+	@param dt -- The delta time since the last simulation step.
+]=]
+function Components:onPostSimulation(dt: number)
+	for _, activeComponents in pairs(self.activeComponents) do
+		for _, component in pairs(activeComponents) do
+			if component.onPostSimulation then
+				safeCall({
+					"[Components] Failed to run onPostSimulation for '"
+						.. (tostring(component) .. "' for"),
+					activeComponents,
+					"[" .. (activeComponents:GetFullName() .. "]"),
+				}, function()
+					return component:onPostSimulation(dt)
+				end)
+			end
+		end
+	end
+end
+
+--[=[
+	Called before the simulation step, this will run all components
+	that have the `onPreSimulation` lifecycle method.
+
+	@param dt -- The delta time since the last simulation step.
+]=]
+function Components:onPreSimulation(dt: number)
+	for _, activeComponents in pairs(self.activeComponents) do
+		for _, component in pairs(activeComponents) do
+			if component.onPreSimulation then
+				safeCall({
+					"[Components] Failed to run onPreSimulation for '"
+						.. (tostring(component) .. "' for"),
+					activeComponents,
+					"[" .. (activeComponents:GetFullName() .. "]"),
+				}, function()
+					return component:onPreSimulation(dt)
+				end)
+			end
+		end
+	end
+end
+
+--[=[
+	Called before the render step, this will run all components
+	that have the `onPreRender` lifecycle method.
+
+	@param dt -- The delta time since the last render step.
+]=]
+function Components:onPreRender(dt: number)
+	for _, activeComponents in pairs(self.activeComponents) do
+		for _, component in pairs(activeComponents) do
+			if component.onPreRender then
+				safeCall({
+					"[Components] Failed to run onPreRender for '"
+						.. (tostring(component) .. "' for"),
+					activeComponents,
+					"[" .. (activeComponents:GetFullName() .. "]"),
+				}, function()
+					return component:onPreRender(dt)
+				end)
+			end
+		end
+	end
+end
+
+--[=[
 	Adds a component to an instance linked by the created object. This
 	will register the component, start its lifecycles, bind callbacks to the
 	required listeners and setup their attributes and properties.
