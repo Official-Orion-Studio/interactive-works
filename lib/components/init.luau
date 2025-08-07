@@ -310,13 +310,10 @@ end
 ]=]
 function Components:addComponent(instance: Instance, ctor: any)
 	local attributes = self:getAttributes(instance, ctor)
-
 	local activeComponents = self.activeComponents[instance]
 	if not activeComponents then
 		activeComponents = {}
 		self.activeComponents[instance] = activeComponents
-	else
-		return
 	end
 
 	local component, deferredCtor = table.unpack(Modding.getDeferredConstructor(ctor))
