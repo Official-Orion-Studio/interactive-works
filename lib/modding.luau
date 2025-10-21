@@ -140,7 +140,10 @@ end
 	@param ctor SingletonConfig -- The constructor to bind.
 ]=]
 function Modding.getDeferredConstructor(ctor)
-	local obj = setmetatable({}, { __index = ctor })
+	local obj = setmetatable({
+		instance = nil,
+		attributes = {},
+	}, { __index = ctor })
 
 	return {
 		obj,

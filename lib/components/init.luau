@@ -384,7 +384,7 @@ function Components:setupComponent(
 		)
 	end
 
-	local copy = attributes
+	local copy = table.clone(attributes)
 	do
 		attributes = {}
 
@@ -428,12 +428,12 @@ function Components:getAttributes(instance: Instance, ctor: any)
 	local merged = merge(defaults, attributes)
 	for key, value in merged do
 		local attribute = instance:GetAttribute(key)
-		if attribute == nil and value ~= attribute then
+		if attribute == nil then
 			instance:SetAttribute(key, value)
 		end
 	end
 
-	return merge(defaults, attributes)
+	return table.clone(merged)
 end
 
 --[=[
